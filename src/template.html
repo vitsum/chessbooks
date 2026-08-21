@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Защита Алехина — части 1–2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600&family=PT+Serif:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>/* chessboard.js v1.0.0 | (c) 2019 Chris Oakman | MIT */
+__CBCSS__</style>
+<style>
+:root{
+  --ink:#0E1B1E; --panel:#142A2E; --panel2:#193338; --rule:#26454A;
+  --lt:#E8E0CE; --dk:#55736A;
+  --gold:#E5A733; --brick:#C4584A;
+  --tx:#E4EDE9; --mut:#8FA9A3;
+  --disp:'Oswald',system-ui,sans-serif;
+  --body:'PT Serif',Georgia,serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--ink);color:var(--tx);font-family:var(--body);line-height:1.55;
+  padding:16px 12px 32px;max-width:1120px;margin:0 auto}
+button{touch-action:manipulation;font-family:inherit}
+
+header{border-bottom:1px solid var(--rule);padding-bottom:12px;margin-bottom:14px}
+.eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--mut)}
+h1{font-family:var(--disp);font-weight:600;font-size:clamp(22px,6vw,40px);line-height:1.03;
+  text-transform:uppercase;margin:5px 0 3px}
+.src{font-size:12.5px;color:var(--mut);font-style:italic}
+
+/* ---------- выбор варианта ---------- */
+.pickrow{display:flex;gap:6px;align-items:stretch}
+.varnav{flex:0 0 46px;background:var(--panel);border:1px solid var(--rule);border-radius:2px;
+  color:var(--gold);font-family:var(--mono);font-size:14px;cursor:pointer}
+.varnav:hover{background:var(--panel2);border-color:var(--gold)}
+.varnav:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.explbtn{width:100%;margin-top:6px;background:var(--panel);border:1px solid var(--rule);
+  border-left:3px solid var(--gold);color:var(--tx);padding:10px 12px;border-radius:2px;
+  cursor:pointer;text-align:left;font-family:var(--body);font-size:14px}
+.explbtn:hover{border-color:var(--gold)}
+.explbtn.on{background:var(--panel2);border-color:var(--gold);color:var(--gold)}
+.expmoves{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.expmoves button{background:var(--panel2);border:1px solid var(--rule);color:var(--tx);
+  font-family:var(--mono);font-size:14px;padding:8px 11px;border-radius:2px;cursor:pointer}
+.expmoves button:hover{border-color:var(--gold);color:var(--gold)}
+.expmoves button b{color:var(--gold);font-weight:400;font-size:11px;margin-left:6px}
+.exphit{display:block;width:100%;text-align:left;background:none;border:none;
+  border-bottom:1px solid rgba(38,69,74,.6);padding:11px 13px;cursor:pointer;color:var(--tx)}
+.exphit:hover{background:var(--panel2)}
+.exphit .t{display:block;font-family:var(--disp);font-size:15px;text-transform:uppercase;letter-spacing:.03em;line-height:1.2}
+.exphit .m{display:block;font-family:var(--mono);font-size:11px;color:var(--mut);margin-top:4px}
+.exphit .m b{color:var(--gold);font-weight:400}
+.varpos{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--mut);text-align:center;margin:6px 0 14px;opacity:.75}
+.picker{flex:1;min-width:0;background:var(--panel);border:1px solid var(--rule);border-radius:2px;
+  padding:11px 13px;cursor:pointer;color:var(--tx);text-align:left;
+  display:flex;align-items:center;gap:12px}
+.picker:hover{border-color:var(--gold)}
+.picker:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.picker .cap{flex:1;min-width:0}
+.picker .ch{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--mut);display:block;margin-bottom:2px}
+.picker .nm{font-family:var(--disp);font-size:16px;text-transform:uppercase;letter-spacing:.03em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.picker .arrow{color:var(--gold);font-size:11px}
+
+.sheetbg{position:fixed;inset:0;background:rgba(6,14,16,.82);z-index:50;display:none;
+  align-items:flex-end;justify-content:center;padding:0}
+.sheetbg.on{display:flex}
+@media(min-width:720px){.sheetbg{align-items:center;padding:24px}}
+.picklist{background:var(--ink);border:1px solid var(--rule);width:100%;max-width:560px;
+  max-height:88vh;overflow-y:auto;border-radius:10px 10px 0 0;
+  padding-bottom:env(safe-area-inset-bottom)}
+@media(min-width:720px){.picklist{border-radius:4px;max-height:80vh}}
+.picklist .top{position:sticky;top:0;background:var(--ink);border-bottom:1px solid var(--rule);
+  padding:14px 16px;display:flex;justify-content:space-between;align-items:center;z-index:2}
+.picklist .top b{font-family:var(--disp);font-weight:400;font-size:13px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--mut)}
+.picklist .top button{background:none;border:none;color:var(--gold);font-size:20px;
+  cursor:pointer;line-height:1;padding:4px 8px}
+.grp{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--gold);padding:16px 16px 7px;border-bottom:1px solid var(--rule);opacity:.85}
+.opt{display:block;width:100%;text-align:left;background:none;border:none;
+  border-bottom:1px solid rgba(38,69,74,.6);padding:13px 16px;cursor:pointer;color:var(--tx)}
+.opt:hover{background:var(--panel)}
+.opt[aria-current="true"]{background:var(--panel2);box-shadow:inset 3px 0 0 var(--gold)}
+.opt .row1{display:flex;align-items:baseline;gap:10px}
+.opt .t{font-family:var(--disp);font-size:16px;text-transform:uppercase;letter-spacing:.03em;flex:1}
+.opt .e{font-family:var(--mono);font-size:12px;color:var(--gold);white-space:nowrap}
+.opt .e.bad{color:var(--brick)}
+.opt .mv{font-family:var(--mono);font-size:11.5px;color:var(--mut);margin-top:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ---------- раскладка ---------- */
+.grid{display:grid;gap:18px}
+@media(min-width:860px){.grid{grid-template-columns:minmax(0,1fr) 330px;align-items:start}}
+.left{width:100%;max-width:520px;margin:0 auto}
+
+/* ---------- градусник ---------- */
+.boardrow{display:flex;gap:8px;align-items:stretch}
+.gauge{position:relative;flex:0 0 26px;background:#16292D;border:1px solid var(--rule);
+  overflow:hidden}
+.g-white{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(#F3EEE2,#D8D0BC);
+  transition:height .35s ease}
+.gauge.flip .g-white{bottom:auto;top:0}
+.g-mid{position:absolute;left:0;right:0;top:50%;height:1px;background:var(--gold);opacity:.55}
+.g-sym.dim{color:var(--mut)}
+.g-sym{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-90deg);
+  transform-origin:center;font-family:var(--mono);font-size:11px;font-weight:700;
+  color:var(--gold);white-space:nowrap;letter-spacing:.04em;
+  text-shadow:0 0 5px #0E1B1E,0 0 5px #0E1B1E,0 0 5px #0E1B1E}
+@media(prefers-reduced-motion:reduce){.g-white{transition:none}}
+
+/* ---------- подварианты ---------- */
+.subs{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.subs button{background:var(--panel2);border:1px solid var(--rule);border-left:3px solid var(--gold);
+  color:var(--tx);text-align:left;padding:10px 12px;font-size:14px;cursor:pointer;border-radius:2px;
+  font-family:var(--body)}
+.subs button:hover{border-color:var(--gold)}
+.subs button .mv{font-family:var(--mono);font-size:12px;color:var(--mut);display:block;margin-top:3px}
+.note.sub{border-left-color:#7FC6A8;background:#15313A}
+.note .subline{font-family:var(--mono);font-size:13.5px;margin-top:6px;line-height:1.9}
+.note .subline span{padding:2px 5px;border-radius:2px}
+.note .subline span.now{background:var(--gold);color:#10201F;font-weight:700}
+.exitsub{width:100%;margin-top:8px;background:none;border:1px solid #7FC6A8;color:#7FC6A8;
+  padding:10px;border-radius:2px;cursor:pointer;font-family:var(--mono);font-size:12px}
+.exitsub:hover{background:rgba(127,198,168,.12)}
+
+/* ---------- доска ---------- */
+#board{flex:1;min-width:0}
+.board-b72b1{border:1px solid var(--rule);box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.white-1e1d7{background-color:var(--lt);color:#55736A}
+.black-3c85d{background-color:var(--dk);color:#E8E0CE}
+.notation-322f9{font-family:var(--mono)!important;font-size:10px!important;opacity:.65}
+.square-55d63.hl::before{content:"";position:absolute;inset:0;background:var(--gold);
+  opacity:.38;mix-blend-mode:multiply;z-index:1;pointer-events:none}
+.square-55d63 img{position:relative;z-index:2}
+
+.evalstrip{display:flex;justify-content:space-between;align-items:center;gap:10px;
+  background:var(--panel);border:1px solid var(--rule);border-top:none;padding:7px 11px}
+.evalstrip .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);white-space:nowrap}
+.evalstrip .lbl b{color:var(--tx);font-weight:700;font-size:12px;letter-spacing:0}
+.evalstrip .val{font-family:var(--mono);font-size:13px;color:var(--gold);text-align:right}
+.evalstrip .val.bad{color:var(--brick)}
+
+/* ---------- кнопки ---------- */
+.ctrl{display:flex;gap:6px;margin-top:10px}
+.ctrl button{flex:1;background:var(--panel);border:1px solid var(--rule);color:var(--tx);
+  font-family:var(--mono);font-size:16px;padding:13px 0;cursor:pointer;border-radius:2px;
+  position:relative}
+.ctrl button:hover{background:var(--panel2);border-color:var(--gold)}
+.ctrl button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.ctrl button:disabled{opacity:.3;cursor:default}
+.ctrl .flip{flex:0 0 52px;font-size:13px}
+/* подсказка: у следующего хода есть комментарий */
+.ctrl button.coming::after{content:"";position:absolute;top:6px;right:8px;width:6px;height:6px;
+  border-radius:50%;background:var(--gold);box-shadow:0 0 6px var(--gold)}
+
+.hint{text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--mut);opacity:.7;margin-top:8px;display:none}
+
+/* ---------- комментарий ---------- */
+.note{background:var(--panel);border-left:3px solid var(--gold);padding:13px 15px;
+  margin-top:12px;font-size:15.5px}
+.note.quiet{border-left-color:var(--rule)}
+.note .head{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--mut);margin-bottom:5px;display:flex;justify-content:space-between;gap:10px}
+.note .head b{color:var(--gold);font-weight:400}
+.note .cnt{color:var(--mut);opacity:.8;white-space:nowrap}
+.note p{color:#CFDCD8}
+.note .empty{color:var(--mut);font-style:italic}
+.note a.inl{color:var(--gold);font-family:var(--mono);font-size:.92em;cursor:pointer;
+  border-bottom:1px dashed rgba(229,167,51,.7);padding-bottom:1px}
+.note a.inl:hover{background:rgba(229,167,51,.14)}
+.note a.inl::before{content:"▷ ";font-size:.85em;opacity:.9}
+@keyframes pop{
+  0%{background:#22424A;border-left-color:#FFD37A;transform:translateX(4px)}
+  60%{background:#1B383D;border-left-color:var(--gold);transform:translateX(0)}
+  100%{background:var(--panel)}
+}
+.note.flash{animation:pop .75s ease-out}
+@media(prefers-reduced-motion:reduce){.note.flash{animation:none;outline:2px solid var(--gold)}}
+
+.missed{display:none;width:100%;margin-top:8px;background:rgba(196,88,74,.14);
+  border:1px solid var(--brick);color:#F0C9C2;border-radius:2px;padding:11px 13px;
+  font-family:var(--mono);font-size:12px;letter-spacing:.03em;cursor:pointer;text-align:left}
+.missed.on{display:block}
+.missed:hover{background:rgba(196,88,74,.24)}
+.missed b{color:#fff;font-weight:400}
+
+/* ---------- список ходов ---------- */
+.sheet{background:var(--panel);border:1px solid var(--rule)}
+.sheet summary{font-family:var(--disp);font-weight:400;font-size:12px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--mut);padding:13px;cursor:pointer;list-style:none;
+  display:flex;justify-content:space-between;align-items:center}
+.sheet summary::-webkit-details-marker{display:none}
+.sheet summary::after{content:"▾";color:var(--gold);font-size:11px}
+.sheet[open] summary{border-bottom:1px solid var(--rule)}
+.sheet[open] summary::after{content:"▴"}
+.rows{max-height:min(52vh,430px);overflow-y:auto}
+.row{display:grid;grid-template-columns:38px 1fr 1fr;border-bottom:1px solid rgba(38,69,74,.55);
+  font-family:var(--mono);font-size:14px}
+.row:last-child{border-bottom:none}
+.row .n{color:var(--mut);font-size:11px;display:flex;align-items:center;padding-left:13px;
+  background:rgba(0,0,0,.14)}
+.row button{background:none;border:none;border-left:1px solid rgba(38,69,74,.55);color:var(--tx);
+  font:inherit;text-align:left;padding:10px 11px;cursor:pointer;position:relative}
+.row button:hover{background:var(--panel2)}
+.row button:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+.row button[aria-current="true"]{background:var(--panel2);color:var(--gold);font-weight:700}
+.row button[aria-current="true"]::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--gold)}
+.row button.dot::after{content:"●";font-size:7px;color:var(--gold);vertical-align:middle;margin-left:7px}
+.row button.dot.unread::after{color:var(--brick);text-shadow:0 0 5px var(--brick)}
+.row button.empty{cursor:default}
+.row button.empty:hover{background:none}
+
+footer{margin-top:22px;padding-top:12px;border-top:1px solid var(--rule);font-size:12px;color:var(--mut)}
+kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px solid var(--rule);
+  border-radius:2px;padding:1px 5px}
+
+@media(max-width:600px){
+  body{padding:12px 10px 24px}
+  h1{font-size:22px}
+  .src{font-size:11.5px;line-height:1.4}
+  .ctrl button{padding:15px 0;font-size:17px}
+  .rows{max-height:none}
+  body .hint{display:block}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Алексей Корнев · Play the Alekhine Defence · 2019</div>
+  <h1>Защита Алехина</h1>
+  <div class="src">Части 1–2, главы 1–8. Репертуар за чёрных — доска развёрнута с их стороны. В книге 5 частей и 16 глав.</div>
+</header>
+
+<div class="pickrow">
+  <button class="varnav" id="prevvar" title="Предыдущий вариант" aria-label="Предыдущий вариант">◀</button>
+  <button class="picker" id="picker" aria-haspopup="dialog">
+    <span class="cap"><span class="ch" id="pch"></span><span class="nm" id="pnm"></span></span>
+    <span class="arrow">▾</span>
+  </button>
+  <button class="varnav" id="nextvar" title="Следующий вариант" aria-label="Следующий вариант">▶</button>
+</div>
+<button class="explbtn" id="explbtn">⚑ Проводник — двигать фигуры и искать позицию в книге</button>
+<div class="varpos" id="varpos"></div>
+
+<div class="sheetbg" id="modal" role="dialog" aria-modal="true" aria-label="Выбор варианта">
+  <div class="picklist" id="picklist">
+    <div class="top"><b>Выберите вариант</b><button id="close" aria-label="Закрыть">×</button></div>
+    <div id="opts"></div>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="left">
+    <div class="boardrow">
+      <div class="gauge" id="gauge" title="Оценка по книге">
+        <div class="g-white" id="gwhite"></div>
+        <div class="g-mid"></div>
+        <div class="g-sym" id="gsym"></div>
+      </div>
+      <div id="board"></div>
+    </div>
+    <div class="evalstrip">
+      <span class="lbl">движок <b id="cpnum">—</b></span>
+      <span class="val" id="ev"></span>
+    </div>
+    <div class="ctrl">
+      <button id="first" title="В начало" aria-label="В начало">⏮</button>
+      <button id="prev" title="Ход назад" aria-label="Ход назад">◀</button>
+      <button id="next" title="Ход вперёд" aria-label="Ход вперёд">▶</button>
+      <button id="last" title="В конец" aria-label="В конец">⏭</button>
+      <button id="flip" class="flip" title="Развернуть доску" aria-label="Развернуть доску">⇅</button>
+    </div>
+    <div class="hint">свайп по доске — листать ходы</div>
+    <div class="note" id="note"></div>
+    <div class="subs" id="subs"></div>
+    <button class="missed" id="missed"></button>
+  </div>
+
+  <details class="sheet" id="sheet">
+    <summary>Все ходы варианта</summary>
+    <div class="rows" id="rows"></div>
+  </details>
+</div>
+
+<footer>
+  <kbd>←</kbd> <kbd>→</kbd> — ходы, <kbd>↑</kbd> <kbd>↓</kbd> — варианты, <kbd>C</kbd> — к следующему комментарию, <kbd>Home</kbd> / <kbd>End</kbd> — в начало и в конец. Градусник — Stockfish 16, глубина 16, посчитано заранее; символ в строке ниже доски — оценка из книги.
+  Доска: chessboard.js + chess.js, фигуры Cburnett. Комментарии — пересказ разбора Корнева своими словами.
+</footer>
+
+<script>/* jQuery 3.7.1 | MIT */
+__JQUERY__
+</script>
+<script>var module={exports:{}},exports=module.exports;</script>
+<script>/* chess.js 1.0.0-beta.8 | (c) Jeff Hlywa | BSD-2 */
+__CHESSJS__
+</script>
+<script>/* chessboard.js 1.0.0 | (c) Chris Oakman | MIT */
+__CBJS__
+</script>
+<script>
+const PIECES = __PIECES__;
+const VARS   = __DATA__;
+const ChessCls = (typeof Chess !== "undefined") ? Chess : module.exports.Chess;
+const $id = id => document.getElementById(id);
+
+/* ---- разбор ходов движком ---- */
+VARS.forEach(v=>{
+  const g = new ChessCls();
+  const out = [{fen:g.fen(), san:null, num:""}];
+  v.moves.forEach((san,i)=>{
+    const white = g.turn()==="w", n = g.moveNumber();
+    const m = g.move(san);
+    out.push({san:m.san, from:m.from, to:m.to, fen:g.fen(),
+              num:(white ? n+"." : n+"…"), note:v.notes[String(i+1)]});
+  });
+  v.plies = out;
+  v.noteIdx = out.map((p,i)=>p.note?i:-1).filter(i=>i>=0);
+});
+
+let vi = 0, pi = 0;
+let sub = null;
+let expl = null;                      /* режим свободной расстановки */
+
+/* индекс всех позиций книги: ключ = FEN без счётчиков, поэтому перестановки ходов ловятся автоматически */
+const KEY = f => f.split(" ").slice(0,4).join(" ");
+const INDEX = {};                       /* {cap, plies, i} — просмотр побочной линии */
+
+/* оценки книги -> положение градусника (минус = лучше у чёрных) */
+const SCORE = {"=":0,"÷":0,"„":-.3,"ƒ":-.4,"©":-.4,"³":-.7,"²":.7,"∓":-1.6,"µ":-1.6,
+               "±":1.6,"−+":-6,"+−":6};
+function evalAt(v,i){
+  let sym="=", best=-1;
+  for(const k in v.evals) if(+k<=i && +k>best){ best=+k; sym=v.evals[k]; }
+  return sym;
+}
+function fmtCp(cp){
+  if(Math.abs(cp) >= 9000) return (cp>0?"#":"−#");
+  const p = cp/100;
+  return (p>0?"+":"−") + Math.abs(p).toFixed(1);
+}
+function paintGauge(cp, sym){
+  let pct;
+  if(cp === null){ pct = 50; }
+  else if(Math.abs(cp) >= 9000){ pct = cp > 0 ? 100 : 0; }
+  else { pct = 100/(1+Math.exp(-cp/310)); }        /* сигмоида как на lichess */
+  $id("gwhite").style.height = pct.toFixed(1)+"%";
+  const label = cp === null ? (sym||"?") : fmtCp(cp);
+  $id("gsym").textContent = label;
+  $id("cpnum").textContent = label;
+  $id("gsym").classList.toggle("dim", cp === null);
+  $id("gauge").classList.toggle("flip", board.orientation()==="black");
+}
+const seen = new Set();          /* прочитанные комментарии */
+let dwell = null;
+
+VARS.forEach((v,k)=>{
+  v.plies.forEach((p,i)=>{
+    const key = KEY(p.fen);
+    const cell = INDEX[key] || (INDEX[key] = {moves:{}, hits:[]});
+    cell.hits.push({vi:k, ply:i});
+    const nx = v.plies[i+1];
+    if(nx){
+      const mv = cell.moves[nx.san] || (cell.moves[nx.san] = {n:0});
+      mv.n++;
+    }
+  });
+});
+
+const board = Chessboard("board", {
+  position:"start", orientation:"black", showNotation:true, draggable:true,
+  onDragStart: () => !!expl,
+  onDrop: (from, to) => {
+    const m = expl.g.move({from, to, promotion:"q"});
+    if(!m) return "snapback";
+    expl.last = m; setTimeout(renderExpl, 0);
+  },
+  pieceTheme: p => PIECES[p], moveSpeed:190, appearSpeed:140, trashSpeed:120
+});
+let lastW = 0;
+new ResizeObserver(es=>{
+  const w = Math.round(es[0].contentRect.width);
+  if(w && w !== lastW){ lastW = w; board.resize(); setTimeout(paintHL,20); }
+}).observe($id("board"));
+
+/* ---- список вариантов ---- */
+(function buildOpts(){
+  const box=$id("opts"); let chapter=null;
+  VARS.forEach((v,i)=>{
+    if(v.chapter!==chapter){
+      chapter=v.chapter;
+      const h=document.createElement("div"); h.className="grp"; h.textContent=chapter;
+      box.appendChild(h);
+    }
+    const b=document.createElement("button");
+    b.className="opt"; b.dataset.i=i;
+    const bad=/−|\+−|µ/.test(v.eval);
+    b.innerHTML=`<span class="row1"><span class="t">${v.title}</span>`+
+                `<span class="e${bad?" bad":""}">${v.tag}</span></span>`+
+                `<span class="mv">${v.line}</span>`;
+    b.onclick=()=>{ sub=null; vi=i; pi=0; closeModal(); render(); };
+    box.appendChild(b);
+  });
+})();
+function openModal(){
+  $id("modal").classList.add("on");
+  [...$id("opts").querySelectorAll(".opt")].forEach(o=>
+    o.setAttribute("aria-current", (+o.dataset.i===vi)+""));
+  const cur=$id("opts").querySelector('[aria-current="true"]');
+  if(cur && cur.offsetTop > 320) $id("picklist").scrollTop = cur.offsetTop-140;
+}
+function closeModal(){ $id("modal").classList.remove("on"); }
+$id("note").addEventListener("click", e=>{
+  const a = e.target.closest("a.inl");
+  if(!a) return;
+  const d = VARS[vi].isubs[a.dataset.s];
+  sub = { cap: d.kind==="plan" ? "Расстановка: ходы одной стороны подряд" : "Побочная линия",
+          kind: d.kind,
+          plies: [{fen:d.startFen, san:null, num:""}].concat(d.plies), i:1 };
+  render();
+});
+$id("picker").onclick=openModal;
+function goVar(d){ if(expl) toggleExpl(); sub=null; vi=(vi+d+VARS.length)%VARS.length; pi=0; render(); }
+$id("prevvar").onclick=()=>goVar(-1);
+$id("nextvar").onclick=()=>goVar(1);
+$id("close").onclick=closeModal;
+$id("modal").onclick=e=>{ if(e.target===$id("modal")) closeModal(); };
+
+/* ---- доска ---- */
+function frame(){ return sub ? sub.plies[sub.i] : VARS[vi].plies[pi]; }
+function paintHL(){
+  $(".square-55d63").removeClass("hl");
+  const p = frame();
+  if(p.from) $("#board .square-"+p.from+", #board .square-"+p.to).addClass("hl");
+}
+
+/* ---- пропущенные комментарии ---- */
+const key = i => VARS[vi].id+":"+i;
+function markSeen(i){ seen.add(key(i)); refreshMissed(); drawSheet(); }
+function missedList(){
+  return VARS[vi].noteIdx.filter(i => i < pi && !seen.has(key(i)));
+}
+function refreshMissed(){
+  const m = missedList(), el = $id("missed");
+  el.classList.toggle("on", m.length>0);
+  if(m.length){
+    const w = m.length===1 ? "комментарий" : (m.length<5 ? "комментария" : "комментариев");
+    el.innerHTML = `⤺ пропущено <b>${m.length}</b> ${w} — вернуться к ближайшему`;
+    el.onclick = ()=>{ pi = m[m.length-1]; render(); };
+  }
+}
+
+/* ---- список ходов ---- */
+function drawSheet(){
+  const pl=VARS[vi].plies, box=$id("rows");
+  box.innerHTML="";
+  for(let i=1;i<pl.length;i+=2){
+    const row=document.createElement("div"); row.className="row";
+    const n=document.createElement("div"); n.className="n"; n.textContent=Math.ceil(i/2);
+    row.appendChild(n);
+    [i,i+1].forEach(k=>{
+      const b=document.createElement("button");
+      if(k<pl.length){
+        b.textContent=pl[k].san;
+        if(pl[k].note){ b.classList.add("dot"); if(!seen.has(key(k))) b.classList.add("unread"); }
+        b.setAttribute("aria-current", k===pi ? "true":"false");
+        b.onclick=()=>{ sub=null; pi=k; render(); };
+      } else { b.className="empty"; b.textContent="—"; b.disabled=true; }
+      row.appendChild(b);
+    });
+    box.appendChild(row);
+  }
+  const cur=box.querySelector('[aria-current="true"]');
+  if(cur) box.scrollTop = Math.max(0, cur.offsetTop - box.clientHeight/2 + cur.offsetHeight/2);
+}
+
+/* ---- отрисовка ---- */
+let prevKey = null;
+function render(){
+  const v=VARS[vi], p=frame();
+  $id("pch").textContent = v.chapter;
+  $id("pnm").textContent = v.title;
+  $id("varpos").textContent = `вариант ${vi+1} из ${VARS.length} · ${v.noteIdx.length} комм.`;
+  board.position(p.fen);
+  setTimeout(paintHL, 30);
+
+  $id("ev").className = "val" + (/−|\+−/.test(v.eval) ? " bad" : "");
+  $id("ev").textContent = v.eval;
+  paintGauge(sub ? null : (v.cp ? v.cp[pi] : null), evalAt(v, pi));
+
+  /* --- режим просмотра побочной линии --- */
+  const subsBox = $id("subs");
+  if(sub){
+    const note=$id("note");
+    note.className="note sub";
+    note.innerHTML = `<div class="head"><b>${sub.kind==="plan"?"расстановка":"побочная линия"}</b>`+
+      `<span class="cnt">${sub.i} из ${sub.plies.length-1}</span></div>`+
+      `<p>${sub.cap}</p><div class="subline">`+
+      sub.plies.slice(1).map((q,k)=>
+        `<span class="${k+1===sub.i?"now":""}">${q.num} ${q.san}</span>`).join(" ")+
+      `</div>`;
+    subsBox.innerHTML="";
+    const back=document.createElement("button");
+    back.className="exitsub"; back.textContent="✕ вернуться в главную линию";
+    back.onclick=()=>{ sub=null; render(); };
+    subsBox.appendChild(back);
+    $id("missed").classList.remove("on");
+    board.position(p.fen); setTimeout(paintHL,30);
+    drawSheet();
+    $id("prev").disabled=false; $id("first").disabled=false;
+    $id("next").disabled = (sub.i===sub.plies.length-1); $id("last").disabled=$id("next").disabled;
+    $id("next").classList.remove("coming");
+    return;
+  }
+  subsBox.innerHTML="";
+  (v.subs[String(pi)]||[]).forEach(sv=>{
+    const b=document.createElement("button");
+    b.innerHTML=`▷ ${sv.cap}<span class="mv">${sv.plies.map(q=>q.num+" "+q.san).join(" ")}</span>`;
+    b.onclick=()=>{ sub={cap:sv.cap, plies:[{fen:v.plies[pi].fen, san:null, num:""}].concat(sv.plies), i:1};
+                    render(); };
+    subsBox.appendChild(b);
+  });
+
+  const note=$id("note");
+  clearTimeout(dwell);
+  if(p.note){
+    const k = v.noteIdx.indexOf(pi)+1;
+    note.className="note";
+    note.innerHTML = `<div class="head"><b>${p.num} ${p.san}</b>`+
+      `<span class="cnt">комментарий ${k} из ${v.noteIdx.length}</span></div><p>${p.note}</p>`;
+    if(prevKey!==key(pi)){
+      note.classList.remove("flash"); void note.offsetWidth; note.classList.add("flash");
+      if(navigator.vibrate) navigator.vibrate(18);
+    }
+    /* прочитанным считаем, если задержались на ходу */
+    dwell = setTimeout(()=>markSeen(pi), 1100);
+    prevKey = key(pi);
+  } else {
+    note.className="note quiet";
+    note.innerHTML = p.san
+      ? `<div class="head"><b>${p.num} ${p.san}</b></div><p class="empty">Без комментария.</p>`
+      : `<div class="head"><b>${v.title}</b></div><p class="empty">${v.line}</p>`;
+    prevKey = null;
+  }
+
+  const nx = v.plies[pi+1];
+  $id("next").classList.toggle("coming", !!(nx && nx.note));
+  refreshMissed();
+  drawSheet();
+  $id("prev").disabled = $id("first").disabled = (pi===0);
+  $id("next").disabled = $id("last").disabled = (pi===v.plies.length-1);
+}
+
+/* ---- проводник ---- */
+function toggleExpl(){
+  if(expl){ expl=null; $id("explbtn").classList.remove("on");
+            $id("explbtn").textContent="⚑ Проводник — двигать фигуры и искать позицию в книге";
+            $id("sheet").querySelector("summary").textContent="Все ходы варианта";
+            render(); return; }
+  sub=null; expl={g:new ChessCls(), last:null};
+  $id("explbtn").classList.add("on");
+  $id("explbtn").textContent="✕ Выйти из проводника";
+  renderExpl();
+}
+$id("explbtn").onclick=toggleExpl;
+
+function renderExpl(){
+  const g=expl.g, cell=INDEX[KEY(g.fen())];
+  board.position(g.fen());
+  setTimeout(()=>{
+    $(".square-55d63").removeClass("hl");
+    if(expl.last) $("#board .square-"+expl.last.from+", #board .square-"+expl.last.to).addClass("hl");
+  }, 30);
+
+  $id("gsym").textContent="⚑"; $id("gsym").classList.add("dim");
+  $id("cpnum").textContent="—";
+  $id("ev").textContent = cell ? "позиция есть в книге" : "такой позиции в книге нет";
+  $id("ev").className = "val" + (cell ? "" : " bad");
+  $id("subs").innerHTML=""; $id("missed").classList.remove("on");
+
+  const hist=g.history(); const line=[];
+  for(let i=0;i<hist.length;i++) line.push((i%2?"":(i/2+1)+".")+hist[i]);
+  const note=$id("note");
+  note.className="note";
+  let html=`<div class="head"><b>проводник</b><span class="cnt">ход ${g.turn()==="w"?"белых":"чёрных"}</span></div>`;
+  html += `<p>${hist.length ? line.join(" ") : "Двигайте фигуры на доске — приложение само найдёт совпадающие варианты, включая перестановки ходов."}</p>`;
+  if(cell){
+    const ms=Object.entries(cell.moves).sort((a,b)=>b[1].n-a[1].n);
+    if(ms.length) html += `<div class="expmoves">`+ms.map(([san,d])=>
+        `<button data-m="${san}">${san}<b>${d.n}</b></button>`).join("")+`</div>`;
+  }
+  note.innerHTML=html;
+  note.querySelectorAll(".expmoves button").forEach(b=>{
+    b.onclick=()=>{ const m=expl.g.move(b.dataset.m); expl.last=m; renderExpl(); };
+  });
+
+  const box=$id("rows"); box.innerHTML="";
+  const hits = cell ? cell.hits : [];
+  $id("sheet").querySelector("summary").textContent =
+    hits.length ? `Совпадающие варианты (${hits.length})` : "Совпадений нет";
+  if(hits.length) $id("sheet").open = true;
+  hits.slice(0,40).forEach(h=>{
+    const v=VARS[h.vi];
+    const b=document.createElement("button"); b.className="exphit";
+    const num = h.ply ? `${Math.ceil(h.ply/2)}${h.ply%2?".":"…"}${v.plies[h.ply].san}` : "начало";
+    b.innerHTML=`<span class="t">${v.title}</span><span class="m">${v.chapter} · после <b>${num}</b></span>`;
+    b.onclick=()=>{ expl=null; $id("explbtn").classList.remove("on");
+      $id("explbtn").textContent="⚑ Проводник — двигать фигуры и искать позицию в книге";
+      $id("sheet").querySelector("summary").textContent="Все ходы варианта";
+      vi=h.vi; pi=h.ply; render(); };
+    box.appendChild(b);
+  });
+
+  $id("prev").disabled = $id("first").disabled = (hist.length===0);
+  $id("next").disabled = $id("last").disabled = true;
+  $id("next").classList.remove("coming");
+}
+
+/* ---- навигация ---- */
+const go = d => {
+  if(expl){ if(d<0 && expl.g.history().length){ expl.g.undo(); expl.last=null; renderExpl(); } return; }
+  if(sub){
+    const ni = sub.i + d;
+    if(ni < 1){ sub = null; render(); return; }
+    sub.i = Math.min(sub.plies.length-1, ni); render(); return;
+  }
+  const L=VARS[vi].plies.length; pi=Math.max(0,Math.min(L-1,pi+d)); render();
+};
+function nextNote(dir){
+  const arr = VARS[vi].noteIdx;
+  const t = dir>0 ? arr.find(i=>i>pi) : [...arr].reverse().find(i=>i<pi);
+  if(t!==undefined){ pi=t; render(); }
+}
+$id("next").onclick=()=>go(1);
+$id("prev").onclick=()=>go(-1);
+$id("first").onclick=()=>{ if(expl){ expl.g.reset(); expl.last=null; renderExpl(); return; } if(sub){sub=null;} else {pi=0;} render();};
+$id("last").onclick=()=>{ if(expl) return; if(sub){sub.i=sub.plies.length-1;} else {pi=VARS[vi].plies.length-1;} render();};
+$id("flip").onclick=()=>{board.flip(); if(expl){renderExpl();} else {render();setTimeout(paintHL,30);} };
+
+let tx=0,ty=0;
+const bw=$id("board");
+bw.addEventListener("touchstart",e=>{tx=e.changedTouches[0].clientX;ty=e.changedTouches[0].clientY;},{passive:true});
+bw.addEventListener("touchend",e=>{
+  const dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty;
+  if(Math.abs(dx)>40 && Math.abs(dx)>Math.abs(dy)) go(dx<0?1:-1);
+},{passive:true});
+
+document.addEventListener("keydown",e=>{
+  if($id("modal").classList.contains("on")){ if(e.key==="Escape") closeModal(); return; }
+  if(expl && e.key==="Escape"){ toggleExpl(); e.preventDefault(); return; }
+  if(expl && e.key!=="ArrowLeft"){ return; }
+  if(e.key==="ArrowRight"){go(1);e.preventDefault();}
+  else if(e.key==="ArrowLeft"){go(-1);e.preventDefault();}
+  else if(e.key==="ArrowDown"){goVar(1);e.preventDefault();}
+  else if(e.key==="ArrowUp"){goVar(-1);e.preventDefault();}
+  else if(e.key==="Home"){pi=0;render();e.preventDefault();}
+  else if(e.key==="End"){pi=VARS[vi].plies.length-1;render();e.preventDefault();}
+  else if(e.key==="c"||e.key==="C"||e.key==="с"||e.key==="С"){nextNote(e.shiftKey?-1:1);e.preventDefault();}
+});
+
+if(window.innerWidth>=860) $id("sheet").open = true;
+render();
+</script>
+</body>
+</html>
