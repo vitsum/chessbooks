@@ -8,7 +8,7 @@
     python3 run.py check [<book>] — автопроверка на просмотры по оценкам движка
     python3 run.py all   <book>   — gen + eval + gen + build
 
-<book> ∈ alekhine | pirc | kid | grob  (или "all" для gen/eval/check)
+<book> ∈ alekhine | pirc | kid | grob | bloodgood  (или "all" для gen/eval/check)
 
 Сборка всегда одна: все книги уезжают в dist/index.html, переключаются вкладками.
 """
