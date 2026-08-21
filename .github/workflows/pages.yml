@@ -30,13 +30,12 @@ jobs:
           python-version: '3.12'
 
       - name: Собрать приложения
-        run: python run.py build all
+        run: python run.py build
 
       - name: Проверить, что собралось
         run: |
           ls -la dist
           test -s dist/index.html
-          test -s dist/chess-defences.html
 
       # Pages должен быть включён в Settings -> Pages с источником «GitHub Actions»:
       # включить его отсюда встроенному токену не хватает прав

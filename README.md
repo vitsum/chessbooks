@@ -4,8 +4,8 @@
 доска, варианты по главам, комментарии, оценки Stockfish и проводник по позициям.
 Интернет при работе приложения не нужен — библиотеки, фигуры и данные вшиты в файл.
 
-Основная сборка — **все три защиты в одном файле** `dist/chess-defences.html`:
-вкладки книг сверху, а проводник ищет позицию сразу по всем книгам.
+Сборка одна: **все три защиты в одном файле** `dist/index.html` — вкладки книг сверху,
+проводник и тренажёр работают сразу по всем книгам. Он же корень сайта.
 
 | id | книга | вариантов | ходов | комментариев |
 |---|---|---|---|---|
@@ -20,7 +20,7 @@
 pip install chess            # python-chess
 apt-get install -y stockfish # бинарник ложится в /usr/games/stockfish
 
-python3 run.py build         # dist/chess-defences.html — все книги в одном файле
+python3 run.py build         # dist/index.html — все книги в одном файле
 ```
 
 Полный цикл по одной книге:
@@ -29,11 +29,10 @@ python3 run.py build         # dist/chess-defences.html — все книги в
 python3 run.py gen   kid      # data/data_kid.json из src/_body_kid.py
 python3 run.py eval  kid      # прогон Stockfish -> data/cp_kid.json  (~2 мин на книгу)
 python3 run.py gen   kid      # ещё раз: подтягивает cp в data
-python3 run.py build kid      # dist/kid-gufeld.html — только эта книга
+python3 run.py build          # пересобрать приложение
 python3 run.py check          # автопроверка на просмотры
 
 python3 run.py all kid        # всё сразу
-python3 run.py build all      # три отдельных файла + объединённый
 ```
 
 `STOCKFISH=/path/to/stockfish` — если бинарник лежит в другом месте.
@@ -42,7 +41,7 @@ python3 run.py build all      # три отдельных файла + объе�
 
 `dist/` в репозитории нет — его собирает GitHub Actions. Обновление сайта = `git push`:
 push в `main` запускает [.github/workflows/pages.yml](.github/workflows/pages.yml),
-тот делает `python run.py build all` и публикует `dist/`. Сборке не нужны ни Stockfish,
+тот делает `python run.py build` и публикует `dist/`. Сборке не нужны ни Stockfish,
 ни python-chess — только стандартная библиотека, данные книг уже лежат в `data/`.
 
 Пересобрать без коммита: вкладка **Actions → Публикация на GitHub Pages → Run workflow**.
@@ -56,24 +55,15 @@ git push -u origin main
 
 Затем в репозитории: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
 Первый деплой поднимется через пару минут по адресу `https://<аккаунт>.github.io/chessbooks/`.
-Ссылку на репозиторий в подвале витрины задаёт `REPO_URL` в [src/books.py](src/books.py).
 
-Что оказывается на сайте:
-
-```
-index.html                витрина: описание и ссылки на приложения
-chess-defences.html       все три защиты в одном файле
-alekhine-parts1-2.html    по одной книге
-pirc-moskalenko.html
-kid-gufeld.html
-```
+На сайте оказывается один файл — `index.html`, он же приложение.
 
 ## Структура
 
 ```
 run.py                 единственная точка входа: gen / eval / build / check / all
 src/
-  books.py             заголовки, короткие имена вкладок и имена выходных файлов
+  books.py             заголовки книг и короткие имена вкладок
   _head.py             build() и add() — разбор ходов через python-chess
   _body_alekhine.py    ← ВСЁ СОДЕРЖИМОЕ КНИГИ: вызовы add(...) с ходами и комментариями
   _body_pirc.py
@@ -83,7 +73,6 @@ src/
                        запись data_<book>.json
   scan.py              распознавание последовательностей ходов внутри текста комментариев
   template.html        шаблон приложения (плейсхолдеры __TITLE__, __BOOKS__, __JQUERY__ и т.д.)
-  index.html           шаблон витрины сайта (__CARDS__, __TITLE__, __REPO__)
 data/                  data_<book>.json — готовые варианты; cp_<book>.json — оценки движка
 vendor/                jquery, chess.js, chessboard.js, 12 SVG-фигур Cburnett
 dist/                  готовые приложения (в гит не идут, собираются заново)
@@ -91,9 +80,9 @@ docs/                  заметки
 .github/workflows/     сборка и публикация на GitHub Pages
 ```
 
-Шаблон один на все сборки: в `__BOOKS__` уезжает список книг
-`[{id, short, h1, eyebrow, sub, credit, vars}]`. Если книга в списке одна —
-вкладки и подсказка про цифровые клавиши сами прячутся, файл выглядит как раньше.
+В `__BOOKS__` уезжает список книг `[{id, short, h1, eyebrow, sub, credit, vars}]`.
+Добавить четвёртую книгу — дописать её в `BOOKS` и положить `data_<id>.json`,
+вкладка появится сама.
 
 ## Как добавить вариант
 

@@ -4,22 +4,19 @@
 
     python3 run.py gen   <book>   — собрать data/data_<book>.json из src/_body_<book>.py
     python3 run.py eval  <book>   — прогнать Stockfish, записать data/cp_<book>.json
-    python3 run.py build [цель]   — собрать html (всё вшито, интернет не нужен)
+    python3 run.py build          — собрать dist/index.html (всё вшито, интернет не нужен)
     python3 run.py check [<book>] — автопроверка на просмотры по оценкам движка
     python3 run.py all   <book>   — gen + eval + gen + build
 
 <book> ∈ alekhine | pirc | kid  (или "all" для gen/eval/check)
 
-Цель для build:
-    one   — (по умолчанию) все книги в одном файле dist/chess-defences.html
-    <book>— одна книга отдельным файлом
-    all   — каждая книга отдельно И объединённый файл
+Сборка всегда одна: все книги уезжают в dist/index.html, переключаются вкладками.
 """
 import sys, os, json, base64, time
 ROOT = os.path.dirname(os.path.abspath(__file__))
 SRC, DATA, DIST, VEND = (os.path.join(ROOT, d) for d in ("src", "data", "dist", "vendor"))
 sys.path.insert(0, SRC)
-from books import BOOKS, META_KEYS, ONE_OUT, ONE_TITLE, SITE_TITLE, REPO_URL
+from books import BOOKS, META_KEYS, OUT, TITLE
 
 STOCKFISH = os.environ.get("STOCKFISH", "/usr/games/stockfish")
 data_path = lambda b: os.path.join(DATA, f"data_{b}.json")
@@ -76,81 +73,28 @@ def _assets(html):
     return html.replace("__PIECES__", json.dumps(pieces))
 
 
-def _write(ids, out, title):
-    """Шаблон + библиотеки + данные перечисленных книг -> один самодостаточный html."""
+def build(*_):
+    """Шаблон + библиотеки + данные всех книг -> один самодостаточный dist/index.html."""
     html = _assets(read(os.path.join(SRC, "template.html")))
 
-    payload = []
-    for b in ids:
-        meta = BOOKS[b]
-        payload.append(dict(id=b, **{k: meta[k] for k in META_KEYS},
-                            vars=json.load(open(data_path(b), encoding="utf-8"))))
+    payload = [dict(id=b, **{k: meta[k] for k in META_KEYS},
+                    vars=json.load(open(data_path(b), encoding="utf-8")))
+               for b, meta in BOOKS.items()]
 
-    for token, val in [("__TITLE__", title),
+    for token, val in [("__TITLE__", TITLE),
                        ("__BOOKS__", json.dumps(payload, ensure_ascii=False))]:
         assert token in html, token
         html = html.replace(token, val)
 
     os.makedirs(DIST, exist_ok=True)
     # newline="\n": иначе на Windows в файл уезжают CRLF и каждая сборка выглядит как правка
-    open(os.path.join(DIST, out), "w", encoding="utf-8", newline="\n").write(html)
+    open(os.path.join(DIST, OUT), "w", encoding="utf-8", newline="\n").write(html)
 
     nv = sum(len(p["vars"]) for p in payload)
     nm = sum(len(v["moves"]) for p in payload for v in p["vars"])
     nn = sum(len(v["notes"]) for p in payload for v in p["vars"])
-    print(f"{out}: {round(len(html)/1024)} KB, книг {len(ids)}, вариантов {nv}, "
+    print(f"{OUT}: {round(len(html)/1024)} KB, книг {len(payload)}, вариантов {nv}, "
           f"ходов {nm}, комментариев {nn}")
-
-
-def _stats(ids):
-    """(вариантов, ходов, комментариев) по перечисленным книгам."""
-    V = [json.load(open(data_path(b), encoding="utf-8")) for b in ids]
-    return (sum(len(x) for x in V),
-            sum(len(v["moves"]) for x in V for v in x),
-            sum(len(v["notes"]) for x in V for v in x))
-
-
-def _index():
-    """dist/index.html — витрина со ссылками на все собранные приложения."""
-    html = read(os.path.join(SRC, "index.html"))
-    nv, nm, nn = _stats(list(BOOKS))
-    parts = [f'<a class="main" href="{ONE_OUT}">'
-             f'<span class="k">главное приложение</span>'
-             f'<span class="t">Все три защиты в одном файле</span>'
-             f'<span class="d">Вкладки книг сверху; проводник и тренажёр работают '
-             f'сразу по всем книгам.</span>'
-             f'<span class="n">{nv} вариантов · {nm} ходов · {nn} комментариев</span></a>',
-             '<h2>По одной книге</h2>', '<div class="cards">']
-    for b, meta in BOOKS.items():
-        v1, m1, n1 = _stats([b])
-        parts.append(f'<a class="card" href="{meta["out"]}">'
-                     f'<span class="t">{meta["h1"]}</span>'
-                     f'<span class="a">{meta["eyebrow"]}</span>'
-                     f'<span class="n">{v1} вариантов · {m1} ходов · {n1} комм.</span></a>')
-    parts.append("</div>")
-
-    for token, val in [("__CARDS__", "\n".join(parts)),
-                       ("__TITLE__", SITE_TITLE), ("__REPO__", REPO_URL)]:
-        assert token in html, token
-        html = html.replace(token, val)
-
-    os.makedirs(DIST, exist_ok=True)
-    open(os.path.join(DIST, "index.html"), "w", encoding="utf-8", newline="\n").write(html)
-    print(f"index.html: {round(len(html)/1024)} KB, витрина: общий файл + {len(BOOKS)} книги")
-
-
-def build(target="one"):
-    """target: 'one' — всё в одном файле, 'all' — и по книгам, и вместе, иначе id книги."""
-    if target in ("one", "all"):
-        if target == "all":
-            for b in BOOKS:
-                _write([b], BOOKS[b]["out"], BOOKS[b]["title"])
-        _write(list(BOOKS), ONE_OUT, ONE_TITLE)
-        _index()
-    else:
-        if target not in BOOKS:
-            sys.exit(f"неизвестная книга: {target}; есть {', '.join(BOOKS)}")
-        _write([target], BOOKS[target]["out"], BOOKS[target]["title"])
 
 
 def check(books=None):
@@ -176,13 +120,15 @@ def check(books=None):
 
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "help"
-    arg = sys.argv[2] if len(sys.argv) > 2 else ("one" if cmd == "build" else "all")
+    arg = sys.argv[2] if len(sys.argv) > 2 else "all"
     targets = list(BOOKS) if arg == "all" else [arg]
+    if arg != "all" and arg not in BOOKS and cmd != "build":
+        sys.exit(f"неизвестная книга: {arg}; есть {', '.join(BOOKS)}")
     if cmd == "gen":     [gen(b) for b in targets]
     elif cmd == "eval":  [evaluate(b) for b in targets]
-    elif cmd == "build": build(arg)
+    elif cmd == "build": build()
     elif cmd == "check": check(None if arg == "all" else targets)
     elif cmd == "all":
         for b in targets: gen(b); evaluate(b); gen(b)
-        build("all")
+        build()
     else: print(__doc__)
