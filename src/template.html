@@ -596,7 +596,7 @@ $id("note").addEventListener("click", e=>{
   if(!a) return;
   const d = VARS[vi].isubs[a.dataset.s];
   sub = { cap: d.kind==="plan" ? "Расстановка: ходы одной стороны подряд" : "Побочная линия",
-          kind: d.kind,
+          kind: d.kind, cp: d.cp,
           plies: [{fen:d.startFen, san:null, num:""}].concat(d.plies), i:1 };
   render();
 });
@@ -667,7 +667,8 @@ function render(){
 
   $id("ev").className = "val" + (/−|\+−/.test(v.eval) ? " bad" : "");
   $id("ev").textContent = v.eval;
-  paintGauge(sub ? null : (v.cp ? v.cp[pi] : null), evalAt(v, pi));
+  /* у побочных линий свои оценки — они считаются отдельно, по FEN */
+  paintGauge(sub ? (sub.cp ? sub.cp[sub.i] : null) : (v.cp ? v.cp[pi] : null), evalAt(v, pi));
 
   /* --- режим просмотра побочной линии --- */
   const subsBox = $id("subs");
@@ -697,7 +698,8 @@ function render(){
   (v.subs[String(pi)]||[]).forEach(sv=>{
     const b=document.createElement("button");
     b.innerHTML=`▷ ${sv.cap}<span class="mv">${sv.plies.map(q=>q.num+" "+q.san).join(" ")}</span>`;
-    b.onclick=()=>{ sub={cap:sv.cap, plies:[{fen:v.plies[pi].fen, san:null, num:""}].concat(sv.plies), i:1};
+    b.onclick=()=>{ sub={cap:sv.cap, cp:sv.cp,
+                         plies:[{fen:v.plies[pi].fen, san:null, num:""}].concat(sv.plies), i:1};
                     render(); };
     subsBox.appendChild(b);
   });

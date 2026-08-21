@@ -3,7 +3,8 @@
 Сборка интерактивных приложений по шахматным книгам.
 
     python3 run.py gen   <book>   — собрать data/data_<book>.json из src/_body_<book>.py
-    python3 run.py eval  <book>   — прогнать Stockfish, записать data/cp_<book>.json
+    python3 run.py eval  <book>   — прогнать Stockfish по главным линиям -> data/cp_<book>.json
+    python3 run.py subs  <book>   — то же для побочных линий -> data/cpsub_<book>.json
     python3 run.py build          — собрать dist/index.html (всё вшито, интернет не нужен)
     python3 run.py check [<book>] — автопроверка на просмотры по оценкам движка
     python3 run.py all   <book>   — gen + eval + gen + build
@@ -21,6 +22,8 @@ from books import BOOKS, META_KEYS, OUT, TITLE
 STOCKFISH = os.environ.get("STOCKFISH", "/usr/games/stockfish")
 data_path = lambda b: os.path.join(DATA, f"data_{b}.json")
 cp_path   = lambda b: os.path.join(DATA, f"cp_{b}.json")
+sub_path  = lambda b: os.path.join(DATA, f"cpsub_{b}.json")
+fen_key   = lambda f: " ".join(f.split()[:4])
 read      = lambda p: open(p, encoding="utf-8").read()
 
 
@@ -28,7 +31,7 @@ def gen(book):
     """Склеиваем _head + _body_<book> + _tail и исполняем: получаем data_<book>.json."""
     parts = [read(os.path.join(SRC, n))
              for n in ("_head.py", f"_body_{book}.py", "_tail_clean.py")]
-    ns = {"DATA_OUT": data_path(book), "CP_IN": cp_path(book),
+    ns = {"DATA_OUT": data_path(book), "CP_IN": cp_path(book), "CPSUB_IN": sub_path(book),
           "SIDE": BOOKS[book]["side"], "__name__": "__gen__"}
     os.chdir(SRC)                      # чтобы работал `import scan`
     exec(compile("\n".join(parts), f"gen_{book}", "exec"), ns)
@@ -54,6 +57,54 @@ def evaluate(book, depth=16, tmax=0.9):
     eng.quit()
     json.dump(out, open(cp_path(book), "w", encoding="utf-8"))
     print("готово:", sum(len(x) for x in out.values()), "позиций за", round(time.time()-t0), "с")
+
+
+def evaluate_subs(book, depth=16, tmax=0.9):
+    """Побочные линии тоже заслуживают градусника.
+
+    Главные линии считаются по индексу хода, а побочные ветвятся, поэтому
+    здесь ключ — FEN без счётчиков: заодно позиции, встречающиеся в разных
+    линиях, считаются один раз.
+    """
+    import chess, chess.engine
+    V = json.load(open(data_path(book), encoding="utf-8"))
+    want = {}
+    for v in V:
+        # FEN по номеру полухода: в данных лежат ходы, доску отматываем сами
+        b = chess.Board(); fens = [b.fen()]
+        for san in v["moves"]:
+            b.push_san(san); fens.append(b.fen())
+        for ply, lst in v.get("subs", {}).items():
+            want[fen_key(fens[int(ply)])] = fens[int(ply)]
+            for sv in lst:
+                for p in sv["plies"]:
+                    want[fen_key(p["fen"])] = p["fen"]
+        for d in v.get("isubs", {}).values():
+            want[fen_key(d["startFen"])] = d["startFen"]
+            for p in d["plies"]:
+                want[fen_key(p["fen"])] = p["fen"]
+    want = {k: f for k, f in want.items() if f}
+
+    done = {}
+    if os.path.exists(sub_path(book)):
+        done = json.load(open(sub_path(book), encoding="utf-8"))
+    todo = [(k, f) for k, f in want.items() if k not in done]
+    print(f"{book}: побочных позиций {len(want)}, считать {len(todo)}")
+    if not todo:
+        return
+
+    eng = chess.engine.SimpleEngine.popen_uci(STOCKFISH)
+    eng.configure({"Hash": 128})
+    lim = chess.engine.Limit(depth=depth, time=tmax)
+    t0 = time.time()
+    for i, (k, f) in enumerate(todo, 1):
+        sc = eng.analyse(chess.Board(f), lim)["score"].white().score(mate_score=10000)
+        done[k] = sc
+        if i % 200 == 0:
+            print(f"  {i}/{len(todo)}  [{time.time()-t0:.0f}s]", flush=True)
+    eng.quit()
+    json.dump(done, open(sub_path(book), "w", encoding="utf-8"))
+    print(f"готово: {len(todo)} позиций за {round(time.time()-t0)} с")
 
 
 def _assets(html):
@@ -130,9 +181,10 @@ if __name__ == "__main__":
         sys.exit(f"неизвестная книга: {arg}; есть {', '.join(BOOKS)}")
     if cmd == "gen":     [gen(b) for b in targets]
     elif cmd == "eval":  [evaluate(b) for b in targets]
+    elif cmd == "subs":  [evaluate_subs(b) for b in targets]
     elif cmd == "build": build()
     elif cmd == "check": check(None if arg == "all" else targets)
     elif cmd == "all":
-        for b in targets: gen(b); evaluate(b); gen(b)
+        for b in targets: gen(b); evaluate(b); gen(b); evaluate_subs(b); gen(b)
         build()
     else: print(__doc__)

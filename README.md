@@ -18,8 +18,10 @@
 | `bloodgood` | К. Бладгуд, «The Tactical Grob» (2002) — за **белых** | 39 | 1213 | 290 |
 | | **всего в объединённом файле** | **222** | **4732** | **1051** |
 
-Оценки Stockfish 18 (глубина 16) посчитаны для всех 4954 позиций всех пяти книг
-и вшиты в файл.
+Оценки Stockfish 18 (глубина 16) посчитаны и вшиты в файл: 4954 позиции главных
+линий плюс 4307 позиций побочных. Побочные считаются отдельной командой и хранятся
+по FEN (`cpsub_<book>.json`), а не по номеру хода: линии ветвятся, зато одинаковые
+позиции из разных вариантов считаются один раз.
 
 ## Быстрый старт
 
@@ -34,8 +36,10 @@ python3 run.py build         # dist/index.html — все книги в одно
 
 ```bash
 python3 run.py gen   kid      # data/data_kid.json из src/_body_kid.py
-python3 run.py eval  kid      # прогон Stockfish -> data/cp_kid.json  (~2 мин на книгу)
+python3 run.py eval  kid      # Stockfish по главным линиям -> data/cp_kid.json
 python3 run.py gen   kid      # ещё раз: подтягивает cp в data
+python3 run.py subs  kid      # Stockfish по побочным линиям -> data/cpsub_kid.json
+python3 run.py gen   kid      # и ещё раз
 python3 run.py build          # пересобрать приложение
 python3 run.py check          # автопроверка на просмотры
 

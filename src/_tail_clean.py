@@ -98,6 +98,23 @@ if os.path.exists(CP_IN):
     for v in V:
         if v["id"] in CP: v["cp"] = CP[v["id"]]
 
+# побочные линии: ключ — FEN без счётчиков (см. run.py subs)
+_cpsub = globals().get("CPSUB_IN", "")
+if _cpsub and os.path.exists(_cpsub):
+    SUBCP = json.load(open(_cpsub, encoding="utf-8"))
+    _k = lambda f: " ".join(f.split()[:4])
+    _get = lambda f: SUBCP.get(_k(f))
+    for v in V:
+        _b = chess.Board(); _fens = [_b.fen()]
+        for _san in v["moves"]:
+            _b.push_san(_san); _fens.append(_b.fen())
+        for ply, lst in v.get("subs", {}).items():
+            start = _fens[int(ply)]
+            for sv in lst:
+                sv["cp"] = [_get(start)] + [_get(p["fen"]) for p in sv["plies"]]
+        for d in v.get("isubs", {}).values():
+            d["cp"] = [_get(d["startFen"])] + [_get(p["fen"]) for p in d["plies"]]
+
 # варианты одной главы должны идти подряд, в каком бы порядке их ни добавили
 _order = {}
 for v in V:
