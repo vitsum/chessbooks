@@ -252,6 +252,18 @@ h1{font-family:var(--disp);font-weight:600;font-size:clamp(22px,6vw,40px);line-h
 .note .alt > b:first-child{font-family:var(--mono);font-size:13.5px;color:var(--gold);
   font-weight:400;display:block;margin-bottom:3px}
 .note .alt i{font-family:var(--body);font-style:italic;font-size:13px;color:var(--mut)}
+.note .alt{font-family:var(--body);font-size:14.5px;line-height:1.55}
+.note .alt .none{color:var(--mut);font-style:italic;font-size:13px}
+.note .raw{margin-top:8px}
+.note .raw summary{font-family:var(--mono);font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--mut);cursor:pointer;list-style:none;
+  padding:5px 0;opacity:.8}
+.note .raw summary::-webkit-details-marker{display:none}
+.note .raw summary::before{content:"▸ "}
+.note .raw[open] summary::before{content:"▾ "}
+.note .raw summary:hover{color:var(--gold)}
+.note .raw > b{color:var(--gold);font-weight:400}
+.note .raw{font-family:var(--mono);font-size:12px;line-height:1.7;color:var(--mut)}
 .note .empty{color:var(--mut);font-style:italic}
 .note a.inl{color:var(--gold);font-family:var(--mono);font-size:.92em;cursor:pointer;
   border-bottom:1px dashed rgba(229,167,51,.7);padding-bottom:1px}

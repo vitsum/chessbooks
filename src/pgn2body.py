@@ -13,6 +13,7 @@
 """
 import io, json, re, sys
 import chess, chess.pgn
+from grob_ru import ru
 
 # NAG -> знак после хода и оценка позиции
 GLYPH = {1: "!", 2: "?", 3: "!!", 4: "??", 5: "!?", 6: "?!"}
@@ -29,7 +30,7 @@ PARTS = {
     "Part 7 (1... Various)":              "Часть 7. Разное",
 }
 
-SUB_PLIES = 10          # сколько полуходов побочной линии проигрывать на доске
+SUB_PLIES = 24          # сколько полуходов побочной линии проигрывать на доске
 DEEP_PLIES = 120        # предел на текстовую расшифровку вложенной вариации
 MAX_DEPTH = 3           # глубже вложенные скобки читать невозможно
 
@@ -40,10 +41,32 @@ CITE = _re.compile(r"^((?:1-0|0-1|1/2-1/2|½-½)\s.*|.*?/(?:corr|[A-Z][a-z]+).*\
 
 
 def clean(text):
-    """Комментарий PGN -> одна строка."""
-    t = " ".join(text.split())
-    t = t.replace("$", "").strip()
-    return t
+    """Комментарий PGN -> одна строка по-русски."""
+    return ru(" ".join(str(text).split()).replace("$", "").strip())
+
+
+# служебные связки: без ходов рядом они бессмысленны
+# обрывки, у которых мысль продолжалась ходами: без ходов они висят в воздухе
+HANG = re.compile(r"(из-за|после|с последующим|потому что|например|при|на|и|или|,)\s*$", re.I)
+GLUE = re.compile(r"^(и|с|а если|или|далее|и т\.д\.|с последующим|когда|после|"
+                  r"и теперь:|:|,|\.|;)\s*$", re.I)
+
+
+def prose(node, limit=3):
+    """Только законченные мысли автора, без выкладки ходов.
+
+    Ходы читать незачем — для них есть кнопка под доской, которая играет
+    линию. В тексте остаётся смысл: связки вроде «и если» без ходов рядом
+    ничего не значат, поэтому отсеиваются."""
+    out, stack, k = [], [node], 0
+    while stack and k < 400:
+        nd = stack.pop(0); k += 1
+        t = clean(nd.comment)
+        if t and t not in out and len(t) >= 18 and not GLUE.match(t) and not HANG.search(t):
+            out.append(t)
+        stack.extend(nd.variations)
+    txt = " ".join(out[:limit])
+    return re.sub(r"(^|[.!?] )([а-яё])", lambda m: m.group(1) + m.group(2).upper(), txt)
 
 
 def title_of(raw):
@@ -121,14 +144,20 @@ def render(node, limit=DEEP_PLIES, top=True, depth=0):
     return " ".join(out)
 
 
-def block(alt, board):
-    """Альтернатива отдельным блоком: первый ход заголовком, дальше — разбор."""
+def head_of(alt, board):
     white = board.turn == chess.WHITE
-    head = (f"{board.fullmove_number}." if white else f"{board.fullmove_number}…") \
+    return (f"{board.fullmove_number}." if white else f"{board.fullmove_number}…") \
         + board.san(alt.move) + glyphs(alt)
-    tail = render(alt, top=False, depth=1)
-    tail = tail[len(board.san(alt.move) + glyphs(alt)):].strip()
-    return f'<div class="alt"><b>{head}</b>{tail}</div>'
+
+
+def block(alt, board):
+    """Альтернатива блоком: ход заголовком, дальше — что о ней сказал автор.
+
+    Ходов в блоке нет намеренно: их играет кнопка под доской."""
+    txt = prose(alt)
+    return (f'<div class="alt"><b>{head_of(alt, board)}</b>'
+            + (txt if txt else "<span class=\"none\">разбор без слов — сыграй линию кнопкой под доской</span>")
+            + "</div>")
 
 
 def convert(path):
@@ -186,16 +215,21 @@ def emit(games):
             if clean(nxt.comment):
                 bits.append(clean(nxt.comment))
 
-            # альтернативы этому ходу — каждая своим блоком, с собственным разбором
-            alts, blocks = [], []
+            # Альтернативы: кнопка под доской играет линию, блок в тексте
+            # объясняет смысл. Полная выкладка ходов — под раскрывашкой.
+            alts, blocks, raw = [], [], []
             for alt in node.variations[1:]:
+                head = head_of(alt, board)
                 sans = line_sans(alt, SUB_PLIES)
                 if sans:
-                    alts.append((f"вместо {san}", " ".join(sans), "before"))
+                    alts.append((head, " ".join(sans), "before"))
                 blocks.append(block(alt, board))
+                raw.append(f"<b>{head}</b> " + render(alt, top=False, depth=1))
             if blocks:
                 bits.append(f'<div class="alts"><span class="cap">вместо {san}</span>'
-                            + "".join(blocks) + "</div>")
+                            + "".join(blocks)
+                            + '<details class="raw"><summary>вся выкладка ходов</summary>'
+                            + "<br>".join(raw) + "</details></div>")
             if alts:
                 subs[key] = alts
 
