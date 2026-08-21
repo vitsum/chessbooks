@@ -381,7 +381,8 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
 
 <footer>
   <kbd>←</kbd> <kbd>→</kbd> — ходы, <kbd>↑</kbd> <kbd>↓</kbd> — варианты, <kbd>C</kbd> — к следующему комментарию, <kbd>Home</kbd> / <kbd>End</kbd> — в начало и в конец. Градусник — Stockfish 16, глубина 16, посчитано заранее; символ в строке ниже доски — оценка из книги.
-  <span id="bookkeys"><kbd>1</kbd>…<kbd>9</kbd> — переключить книгу, </span><kbd>T</kbd> — тренажёр. Доска: chessboard.js + chess.js, фигуры Cburnett.
+  <span id="bookkeys"><kbd>1</kbd>…<kbd>9</kbd> — переключить книгу, </span><kbd>T</kbd> — тренажёр
+  (в нём <kbd>←</kbd> забирает ход). Доска: chessboard.js + chess.js, фигуры Cburnett.
   <span id="credit"></span>
 </footer>
 
@@ -878,7 +879,9 @@ function trBegin(target){
   if(!set.length) return;
   tr = {g:new ChessCls(), path:[], target: target != null ? target : trPick(set),
         errs:0, wrong:null, offbook:null, switched:null, shown:null, illegal:null,
-        last:null, done:false, wait:false, credited:[]};
+        last:null, done:false, wait:false, credited:[],
+        /* снимок перед каждым ходом чёрных — по нему работает «забрать ход» */
+        stack:[], rewound:false};
   $id("trainbtn").classList.add("on");
   $id("trainbtn").textContent = "✕ Выйти из тренажёра";
   trRender();
@@ -939,7 +942,9 @@ function trDrop(from, to){
   return "snapback";
 }
 function trAccept(m, newTarget){
+  tr.stack.push({target:tr.target, len:tr.path.length});
   tr.path.push(m.san); tr.last = m; tr.wrong = null; tr.shown = null; tr.offbook = null;
+  tr.rewound = false;
   tr.switched = newTarget != null ? VARS[newTarget].title : null;
   if(newTarget != null) tr.target = newTarget;
   if(tr.path.length >= VARS[tr.target].moves.length){ trFinish(); return; }
@@ -961,12 +966,33 @@ function trShow(){
   if(!tr || tr.done || tr.wait) return;
   if(!tr.wrong) tr.errs++;                 /* попросил ход сам — тоже не выучено */
   const san = VARS[tr.target].moves[tr.path.length];
+  const snap = {target:tr.target, len:tr.path.length};
   let m = null; try{ m = tr.g.move(san); }catch(e){ m = null; }
   if(!m){ tr.done = true; tr.fatal = san; trRender(); return; }
+  tr.stack.push(snap); tr.rewound = false;
   tr.path.push(san); tr.last = m; tr.wrong = null; tr.switched = null; tr.offbook = null; tr.shown = san;
   if(tr.path.length >= VARS[tr.target].moves.length){ trFinish(); return; }
   trRender(); trWhite();
 }
+/* Забрать ход. Откатываем к позиции перед своим последним ходом — то есть
+   снимаем и ответ белых, и свой ход, и снова оказываемся перед выбором.
+   На статистику это не влияет: назад берутся только принятые ходы, а ошибка
+   засчитывается в момент неверного хода, когда фигура даже не встала на доску. */
+function trBack(toStart){
+  if(!tr || tr.done || !tr.stack.length) return;
+  clearTimeout(trTimer);                   /* белые могли ещё «думать» */
+  const snap = toStart ? tr.stack[0] : tr.stack.pop();
+  if(toStart) tr.stack.length = 0;
+  while(tr.path.length > snap.len){ tr.g.undo(); tr.path.pop(); }
+  tr.target = snap.target;
+  tr.wait = false;
+  tr.wrong = tr.offbook = tr.switched = tr.shown = tr.illegal = null;
+  tr.rewound = true;
+  const h = tr.g.history({verbose:true});
+  tr.last = h.length ? h[h.length-1] : null;
+  trRender();
+}
+
 function trGiveUp(){
   if(!tr) return;
   trRecord(tr.target, Math.max(1, tr.errs));
@@ -1011,6 +1037,7 @@ function trRender(){
   else { paintGauge(null, "🎓"); }
   $id("hint").textContent = tr.done ? "вариант пройден"
                           : tr.wait ? "белые отвечают"
+                          : tr.stack.length ? "тащи фигуру за чёрных · ◀ забрать ход"
                           : "тащи фигуру за чёрных";
 
   const note = $id("note"), subs = $id("subs");
@@ -1068,11 +1095,15 @@ function trRender(){
     const state = tr.illegal ? tr.illegal
                 : tr.wait    ? "белые думают"
                 : tr.switched ? "переключились"
+                : tr.rewound ? "ход забран"
                 : "твой ход за чёрных";
     note.innerHTML =
       `<div class="head"><b>тренажёр</b><span class="cnt${tr.illegal?" bad":""}">${state}</span></div>`+
       (tr.switched
         ? `<p style="color:#7FBF8E">✓ тоже книжный ход — дальше тренируем вариант «${tr.switched}»</p>`
+        : tr.rewound
+        ? `<p style="color:var(--mut)">Ход забран. На статистику это не влияет — `+
+          `назад берутся только принятые ходы.</p>`
         : tr.shown
         ? `<p style="color:var(--mut)">Подсказка: сыграно <b>${tr.shown}</b>.</p>`
         : `<p style="color:var(--mut)">Приложение играет за белых по одному из вариантов книги. `+
@@ -1103,7 +1134,10 @@ function trRender(){
     box.appendChild(row);
   }
 
-  ["first","prev","next","last"].forEach(id=>$id(id).disabled = true);
+  /* назад ходить можно, вперёд — нет: ход надо сыграть самому */
+  const canBack = !tr.done && tr.stack.length > 0;
+  $id("prev").disabled = $id("first").disabled = !canBack;
+  $id("next").disabled = $id("last").disabled = true;
   $id("next").classList.remove("coming");
 }
 
@@ -1178,7 +1212,7 @@ function trOpts(){
 
 /* ---- навигация ---- */
 const go = d => {
-  if(tr) return;
+  if(tr){ if(d < 0) trBack(); return; }
   if(expl){ if(d<0 && expl.g.history().length){ expl.g.undo(); expl.last=null; expl.err=null; renderExpl(); } return; }
   if(sub){
     const ni = sub.i + d;
@@ -1194,7 +1228,7 @@ function nextNote(dir){
 }
 $id("next").onclick=()=>go(1);
 $id("prev").onclick=()=>go(-1);
-$id("first").onclick=()=>{ if(tr) return; if(expl){ expl.g.reset(); expl.last=null; expl.err=null; renderExpl(); return; } if(sub){sub=null;} else {pi=0;} render();};
+$id("first").onclick=()=>{ if(tr){ trBack(true); return; } if(expl){ expl.g.reset(); expl.last=null; expl.err=null; renderExpl(); return; } if(sub){sub=null;} else {pi=0;} render();};
 $id("last").onclick=()=>{ if(expl||tr) return; if(sub){sub.i=sub.plies.length-1;} else {pi=VARS[vi].plies.length-1;} render();};
 $id("flip").onclick=()=>{board.flip(); if(expl){renderExpl();} else if(tr){trRender();} else {render();setTimeout(paintHL,30);} };
 
@@ -1203,7 +1237,7 @@ const bw=$id("board");
 bw.addEventListener("touchstart",e=>{tx=e.changedTouches[0].clientX;ty=e.changedTouches[0].clientY;},{passive:true});
 bw.addEventListener("touchend",e=>{
   const dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty;
-  if(!tr && Math.abs(dx)>40 && Math.abs(dx)>Math.abs(dy)) go(dx<0?1:-1);
+  if(Math.abs(dx)>40 && Math.abs(dx)>Math.abs(dy)) go(dx<0?1:-1);
 },{passive:true});
 
 document.addEventListener("keydown",e=>{
@@ -1211,6 +1245,8 @@ document.addEventListener("keydown",e=>{
   if($id("trmodal").classList.contains("on")){ if(e.key==="Escape") closeTr(); return; }
   if(tr){
     if(e.key==="Escape"){ closeTrainer(); render(); e.preventDefault(); }
+    else if(e.key==="ArrowLeft"){ trBack(); e.preventDefault(); }
+    else if(e.key==="Home"){ trBack(true); e.preventDefault(); }
     else if(e.key==="Enter" && tr.done){ trBegin(); e.preventDefault(); }
     else if(e.key>="1" && e.key<="9"){ const i=+e.key-1; if(i<BOOKS.length && i!==bi){ setBook(i); e.preventDefault(); } }
     return;
