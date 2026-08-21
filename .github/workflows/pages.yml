@@ -41,7 +41,11 @@ jobs:
           test -s dist/index.html
           test -s dist/chess-defences.html
 
+      # enablement: сам включает Pages с источником «GitHub Actions»,
+      # чтобы не переключать это руками в Settings
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:
