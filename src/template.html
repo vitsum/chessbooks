@@ -116,6 +116,13 @@ h1{font-family:var(--disp);font-weight:600;font-size:clamp(22px,6vw,40px);line-h
 .grid{display:grid;gap:18px}
 @media(min-width:860px){.grid{grid-template-columns:minmax(0,1fr) 330px;align-items:start}}
 .left{width:100%;max-width:520px;margin:0 auto}
+/* Доска квадратная и тянется по ширине колонки, поэтому на низком экране (телефон
+   в альбомной ориентации) её низ уезжает за край. Ограничиваем колонку ещё и по
+   высоте окна: 34px — это градусник с отступом, всё остальное уходит доске.
+   svh — высота окна без учёта выезжающих панелей браузера; где его нет, остаётся vh. */
+@media(max-width:859px){
+  .left{max-width:min(520px,calc(72vh + 34px));max-width:min(520px,calc(72svh + 34px))}
+}
 
 /* ---------- градусник ---------- */
 .boardrow{display:flex;gap:8px;align-items:stretch}
@@ -207,6 +214,16 @@ h1{font-family:var(--disp);font-weight:600;font-size:clamp(22px,6vw,40px);line-h
 .square-55d63.hl::before{content:"";position:absolute;inset:0;background:var(--gold);
   opacity:.38;mix-blend-mode:multiply;z-index:1;pointer-events:none}
 .square-55d63 img{position:relative;z-index:2}
+/* ход двумя касаниями: выбранная клетка и куда с неё можно пойти */
+#board{touch-action:manipulation;-webkit-user-select:none;user-select:none;
+  -webkit-tap-highlight-color:transparent}
+.square-55d63.sel::before{content:"";position:absolute;inset:0;background:var(--gold);
+  opacity:.6;mix-blend-mode:multiply;z-index:1;pointer-events:none}
+.square-55d63.mv::after{content:"";position:absolute;left:50%;top:50%;width:30%;height:30%;
+  transform:translate(-50%,-50%);border-radius:50%;background:rgba(14,27,30,.4);
+  z-index:3;pointer-events:none}
+.square-55d63.mv.cap::after{width:84%;height:84%;background:none;
+  border:5px solid rgba(14,27,30,.34)}
 
 .evalstrip{display:flex;justify-content:space-between;align-items:center;gap:10px;
   background:var(--panel);border:1px solid var(--rule);border-top:none;padding:7px 11px}
@@ -497,33 +514,97 @@ BOOKS.forEach((bk,b)=>bk.vars.forEach((v,k)=>{
   });
 }));
 
+/* На телефоне перетаскивание не работает в принципе: chessboard.js вешает touchmove
+   на window, а такие обработчики Chrome делает passive — preventDefault() внутри
+   игнорируется, и вместо фигуры едет страница. Поэтому на сенсорном экране drag
+   выключен, а ходят двумя касаниями: тап по фигуре, тап по клетке. Мышью работает
+   и то, и другое. */
+const TOUCH = !!(window.matchMedia && window.matchMedia("(pointer: coarse)").matches);
+let sel = null;        /* клетка, выбранная касанием или щелчком */
+let selBefore = null;  /* она же на момент начала перетаскивания */
+let gestEnd = 0;       /* конец жеста, который тапом считать нельзя: свайп, перетаскивание */
+
 const board = Chessboard("board", {
   position:"start", orientation:(BOOKS[0].side === "w" ? "white" : "black"),
-  showNotation:true, draggable:true,
+  showNotation:true, draggable: !TOUCH,
   dropOffBoard:"snapback",
   /* в проводнике тянем что угодно, в тренажёре — только чёрные и только в свой ход */
   onDragStart: (src, piece) => {
+    selBefore = sel; clearSel();        /* пока фигуру тащат, подсветка выбора не нужна */
     if(expl) return !expl.g.isGameOver();
     if(tr)   return !tr.done && !tr.wait && tr.g.turn() === tr.side && piece[0] === tr.side;
     return false;
   },
+  /* Простой щелчок по фигуре chessboard.js отдаёт сюда как перетаскивание на месте,
+     from === to. Раньше это уходило в applyMove и получало «так не сходить»; теперь
+     щелчок доигрывает обработчик click ниже — там же, где тап. Возвращаем ему выбор,
+     снятый на время перетаскивания, и ничего не делаем сами: трогать позицию изнутри
+     onDrop нельзя, chessboard.js в этот момент ещё анимирует возврат фигуры. */
   onDrop: (from, to) => {
-    if(tr) return trDrop(from, to);
-    if(!expl) return "snapback";
-    /* chess.js 1.0-beta бросает исключение на нелегальном ходе. Без catch оно вылетает
-       из обработчика chessboard.js, тот не успевает вернуть фигуру — и доска
-       расходится с партией: дальше ломается всё, вплоть до выхода из проводника. */
-    let m = null;
-    try { m = expl.g.move({from, to, promotion:"q"}); } catch(e){ m = null; }
-    if(!m){ explWarn(to === "offboard" ? "фигуру не убрать с доски"
-                                      : from + "–" + to + " — так не сходить"); return "snapback"; }
-    expl.err = null; expl.last = m; setTimeout(renderExpl, 0);
+    if(from === to){ sel = selBefore; return "snapback"; }
+    gestEnd = Date.now();
+    return applyMove(from, to);
   },
   /* после анимации приводим доску к состоянию партии: рокировка, взятие на проходе
      и превращение двигают не только перетащенную фигуру */
   onSnapEnd: () => { const g = expl ? expl.g : tr ? tr.g : null; if(g) board.position(g.fen(), false); },
   pieceTheme: p => PIECES[p], moveSpeed:190, appearSpeed:140, trashSpeed:120
 });
+/* ход, сделанный любым способом: перетаскиванием или двумя касаниями */
+function applyMove(from, to){
+  if(tr) return trDrop(from, to);
+  if(!expl) return "snapback";
+  /* chess.js 1.0-beta бросает исключение на нелегальном ходе. Без catch оно вылетает
+     из обработчика chessboard.js, тот не успевает вернуть фигуру — и доска
+     расходится с партией: дальше ломается всё, вплоть до выхода из проводника. */
+  let m = null;
+  try { m = expl.g.move({from, to, promotion:"q"}); } catch(e){ m = null; }
+  if(!m){ explWarn(to === "offboard" ? "фигуру не убрать с доски"
+                                    : from + "–" + to + " — так не сходить"); return "snapback"; }
+  expl.err = null; expl.last = m; setTimeout(renderExpl, 0);
+}
+
+/* ---- ход двумя касаниями ---- */
+function liveGame(){ return expl ? expl.g : (tr ? tr.g : null); }
+/* брать фигуру можно там же, где её разрешено потянуть, — правила из onDragStart */
+function canPick(sq){
+  const g = liveGame(); if(!g) return false;
+  const p = g.get(sq);  if(!p) return false;
+  if(expl) return !g.isGameOver() && p.color === g.turn();
+  return !tr.done && !tr.wait && g.turn() === tr.side && p.color === tr.side;
+}
+function selMoves(){
+  const g = liveGame();
+  if(!g || !sel) return [];
+  try { return g.moves({square:sel, verbose:true}); } catch(e){ return []; }
+}
+function paintSel(){
+  $(".square-55d63").removeClass("sel mv cap");
+  if(!sel) return;
+  $("#board .square-"+sel).addClass("sel");
+  selMoves().forEach(m=>{
+    const sq = $("#board .square-"+m.to).addClass("mv");
+    if(m.captured) sq.addClass("cap");        /* взятие — кольцо, а не точка */
+  });
+}
+function clearSel(){ if(sel !== null){ sel = null; paintSel(); } }
+function tapSquare(sq){
+  if(sel === sq){ clearSel(); return; }                    /* повторный тап снимает выбор */
+  if(sel && selMoves().some(m => m.to === sq)){
+    const from = sel; sel = null; paintSel();
+    applyMove(from, sq);
+    return;
+  }
+  sel = canPick(sq) ? sq : null;    /* по пустой или чужой клетке — просто сброс */
+  paintSel();
+}
+$id("board").addEventListener("click", e=>{
+  const el = e.target.closest("[data-square]");
+  if(!el) return;
+  if(Date.now() - gestEnd < 250) return;    /* это хвост свайпа или перетаскивания */
+  tapSquare(el.getAttribute("data-square"));
+});
+
 let lastW = 0;
 new ResizeObserver(es=>{
   const w = Math.round(es[0].contentRect.width);
@@ -613,6 +694,9 @@ function paintHL(){
   $(".square-55d63").removeClass("hl");
   const p = expl ? expl.last : tr ? tr.last : frame();
   if(p && p.from) $("#board .square-"+p.from+", #board .square-"+p.to).addClass("hl");
+  /* выбор мог устареть: сменился режим, сторона или сама позиция */
+  if(sel && !canPick(sel)) sel = null;
+  paintSel();
 }
 
 /* ---- пропущенные комментарии ---- */
@@ -791,7 +875,9 @@ function renderExpl(){
               : "ход " + (g.turn()==="w"?"белых":"чёрных") + (g.isCheck() ? ", шах" : "");
   let html=`<div class="head"><b>проводник</b>`+
     `<span class="cnt${expl.err?" bad":""}">${expl.err || state}</span></div>`;
-  const HINT = "Двигайте фигуры на доске — приложение само найдёт совпадающие варианты"
+  const HINT = (TOUCH ? "Коснитесь фигуры, потом клетки, куда её поставить"
+                      : "Двигайте фигуры на доске")
+             + " — приложение само найдёт совпадающие варианты"
              + (BOOKS.length>1 ? " во всех книгах" : "") + ", включая перестановки ходов.";
   html += `<p>${hist.length ? line.join(" ") : HINT}</p>`;
   if(cell){
@@ -1088,7 +1174,9 @@ function trRender(){
   const мой = SIDE_WORDS[tr.side].род, чужой = SIDE_WORDS[tr.side === "w" ? "b" : "w"].тв;
   $id("hint").textContent = tr.done ? "вариант пройден"
                           : tr.wait ? чужой + " отвечают"
-                          : "тащи фигуру за " + мой + (tr.stack.length ? " · ◀ забрать ход" : "");
+                          : (TOUCH ? "коснись фигуры за " + мой + ", потом клетки"
+                                   : "тащи фигуру за " + мой)
+                            + (tr.stack.length ? " · ◀ забрать ход" : "");
 
   const note = $id("note"), subs = $id("subs");
   $id("missed").classList.remove("on");
@@ -1264,6 +1352,7 @@ function trOpts(){
 
 /* ---- навигация ---- */
 const go = d => {
+  clearSel();
   if(tr){ if(d < 0) trBack(); return; }
   if(expl){ if(d<0 && expl.g.history().length){ expl.g.undo(); expl.last=null; expl.err=null; renderExpl(); } return; }
   if(sub){
@@ -1289,6 +1378,10 @@ const bw=$id("board");
 bw.addEventListener("touchstart",e=>{tx=e.changedTouches[0].clientX;ty=e.changedTouches[0].clientY;},{passive:true});
 bw.addEventListener("touchend",e=>{
   const dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty;
+  /* Свайпом листают ходы, а вертикальным движением по доске прокручивают страницу;
+     click после такого жеста браузер присылает не всегда, но присылает. Тапом
+     считаем только касание, которое почти не сдвинулось. */
+  if(Math.abs(dx) > 10 || Math.abs(dy) > 10) gestEnd = Date.now();
   if(Math.abs(dx)>40 && Math.abs(dx)>Math.abs(dy)) go(dx<0?1:-1);
 },{passive:true});
 
