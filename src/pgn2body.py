@@ -30,7 +30,13 @@ PARTS = {
 }
 
 SUB_PLIES = 10          # сколько полуходов побочной линии проигрывать на доске
-DEEP_PLIES = 120       # предел на текстовую расшифровку вложенной вариации
+DEEP_PLIES = 120        # предел на текстовую расшифровку вложенной вариации
+MAX_DEPTH = 3           # глубже вложенные скобки читать невозможно
+
+# хвост вида «1-0 Bloodgood,C-Clark,J/corr Zugzwang 1975 (23)» — это ссылка на партию,
+# а не анализ: показываем её приглушённо, чтобы не мешала читать ходы
+import re as _re
+CITE = _re.compile(r"^((?:1-0|0-1|1/2-1/2|½-½)\s.*|.*?/(?:corr|[A-Z][a-z]+).*\(\d+\).*)$")
 
 
 def clean(text):
@@ -82,7 +88,13 @@ def glyphs(node):
     return "".join(GLYPH[n] for n in sorted(node.nags) if n in GLYPH)
 
 
-def render(node, limit=DEEP_PLIES, top=True):
+def say(text):
+    """Прозаический кусок: ссылку на партию гасим."""
+    t = clean(text)
+    return f"<i>{t}</i>" if t and CITE.match(t) else t
+
+
+def render(node, limit=DEEP_PLIES, top=True, depth=0):
     """Вариация со всеми вложениями -> текст, как в книге:
     `4.Qb3 Qc7 5.cxd5 cxd5 (5…e6 6.h3! Bf5 7.e4) 6.Nc3 and now:`
 
@@ -96,16 +108,27 @@ def render(node, limit=DEEP_PLIES, top=True):
         num = f"{b.fullmove_number}." if white else (f"{b.fullmove_number}…" if k == 0 and top else "")
         out.append(num + san + glyphs(node))
         if clean(node.comment):
-            out.append(clean(node.comment))
+            out.append(say(node.comment))
         b.push(node.move)
         kids = node.variations
-        for alt in kids[1:]:
-            inner = render(alt, limit=DEEP_PLIES, top=True)
-            if inner:
-                out.append("(" + inner + ")")
+        if depth < MAX_DEPTH:
+            for alt in kids[1:]:
+                inner = render(alt, limit=DEEP_PLIES, top=True, depth=depth + 1)
+                if inner:
+                    out.append("(" + inner + ")")
         node = kids[0] if kids else None
         k += 1
     return " ".join(out)
+
+
+def block(alt, board):
+    """Альтернатива отдельным блоком: первый ход заголовком, дальше — разбор."""
+    white = board.turn == chess.WHITE
+    head = (f"{board.fullmove_number}." if white else f"{board.fullmove_number}…") \
+        + board.san(alt.move) + glyphs(alt)
+    tail = render(alt, top=False, depth=1)
+    tail = tail[len(board.san(alt.move) + glyphs(alt)):].strip()
+    return f'<div class="alt"><b>{head}</b>{tail}</div>'
 
 
 def convert(path):
@@ -163,18 +186,16 @@ def emit(games):
             if clean(nxt.comment):
                 bits.append(clean(nxt.comment))
 
-            # альтернативы этому ходу — целиком, с их собственным разбором
-            alts = []
-            texts = []
+            # альтернативы этому ходу — каждая своим блоком, с собственным разбором
+            alts, blocks = [], []
             for alt in node.variations[1:]:
                 sans = line_sans(alt, SUB_PLIES)
                 if sans:
                     alts.append((f"вместо {san}", " ".join(sans), "before"))
-                t = render(alt)
-                if t:
-                    texts.append(t)
-            if texts:
-                bits.append("Вместо " + san + ": " + " | ".join(texts))
+                blocks.append(block(alt, board))
+            if blocks:
+                bits.append(f'<div class="alts"><span class="cap">вместо {san}</span>'
+                            + "".join(blocks) + "</div>")
             if alts:
                 subs[key] = alts
 
