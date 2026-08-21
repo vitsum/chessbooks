@@ -28,7 +28,8 @@ def gen(book):
     """Склеиваем _head + _body_<book> + _tail и исполняем: получаем data_<book>.json."""
     parts = [read(os.path.join(SRC, n))
              for n in ("_head.py", f"_body_{book}.py", "_tail_clean.py")]
-    ns = {"DATA_OUT": data_path(book), "CP_IN": cp_path(book), "__name__": "__gen__"}
+    ns = {"DATA_OUT": data_path(book), "CP_IN": cp_path(book),
+          "SIDE": BOOKS[book]["side"], "__name__": "__gen__"}
     os.chdir(SRC)                      # чтобы работал `import scan`
     exec(compile("\n".join(parts), f"gen_{book}", "exec"), ns)
     os.chdir(ROOT)

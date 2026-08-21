@@ -423,6 +423,11 @@ let expl = null;                      /* режим проводника: сво
 let tr   = null;                      /* режим тренажёра: разыгрывание варианта за чёрных */
 
 /* индекс всех позиций всех книг: ключ = FEN без счётчиков, перестановки ходов ловятся автоматически */
+/* за кого репертуар: "w" или "b". Доска разворачивается этой стороной,
+   в тренажёре ей играет пользователь, второй стороной — приложение. */
+const SIDE  = () => BOOKS[bi].side || "b";
+const SIDE_WORDS = {w:{род:"белых", тв:"белые"}, b:{род:"чёрных", тв:"чёрные"}};
+
 const KEY = f => f.split(" ").slice(0,4).join(" ");
 const INDEX = {};                       /* {cap, plies, i} — просмотр побочной линии */
 
@@ -468,12 +473,13 @@ BOOKS.forEach((bk,b)=>bk.vars.forEach((v,k)=>{
 }));
 
 const board = Chessboard("board", {
-  position:"start", orientation:"black", showNotation:true, draggable:true,
+  position:"start", orientation:(BOOKS[0].side === "w" ? "white" : "black"),
+  showNotation:true, draggable:true,
   dropOffBoard:"snapback",
   /* в проводнике тянем что угодно, в тренажёре — только чёрные и только в свой ход */
   onDragStart: (src, piece) => {
     if(expl) return !expl.g.isGameOver();
-    if(tr)   return !tr.done && !tr.wait && tr.g.turn() === "b" && piece[0] === "b";
+    if(tr)   return !tr.done && !tr.wait && tr.g.turn() === tr.side && piece[0] === tr.side;
     return false;
   },
   onDrop: (from, to) => {
@@ -542,6 +548,10 @@ function setBook(i){
 }
 function paintBook(){
   const bk = BOOKS[bi];
+  const side = bk.side || "b";
+  if(board.orientation() !== (side === "w" ? "white" : "black"))
+    board.orientation(side === "w" ? "white" : "black");
+  $id("trainbtn").textContent = tr ? "✕ Выйти из тренажёра" : trainLabel();
   $id("eyebrow").textContent = bk.eyebrow;
   $id("h1").textContent      = bk.h1;
   $id("src").textContent     = bk.sub;
@@ -802,9 +812,8 @@ function renderExpl(){
    пользователь отвечает за чёрных. Любой книжный ответ засчитывается —
    если он уводит в другой вариант, тренажёр просто переключается на него.
    ================================================================ */
-const TRAIN_LABEL = "🎓 Тренажёр — разыграть варианты за чёрных";
+const trainLabel = () => "🎓 Тренажёр — разыграть варианты за " + SIDE_WORDS[SIDE()].род;
 const HINT_LABEL  = $id("hint").textContent;
-$id("trainbtn").textContent = TRAIN_LABEL;
 
 /* флаг ставит сборка (src/_tail_clean.py): партии целиком и линии,
    где плохой ход показан за чёрных, — повторять такое тренажёр не просит */
@@ -863,7 +872,7 @@ let trTimer = null;
 function closeTrainer(){
   tr = null; clearTimeout(trTimer);
   $id("trainbtn").classList.remove("on");
-  $id("trainbtn").textContent = TRAIN_LABEL;
+  $id("trainbtn").textContent = trainLabel();
   $id("sheet").querySelector("summary").textContent = "Все ходы варианта";
   $id("hint").textContent = HINT_LABEL;
 }
@@ -877,7 +886,7 @@ function trBegin(target){
   sub = null;
   const set = activeIdx();
   if(!set.length) return;
-  tr = {g:new ChessCls(), path:[], target: target != null ? target : trPick(set),
+  tr = {g:new ChessCls(), side:SIDE(), path:[], target: target != null ? target : trPick(set),
         errs:0, wrong:null, offbook:null, switched:null, shown:null, illegal:null,
         last:null, done:false, wait:false, credited:[],
         /* снимок перед каждым ходом чёрных — по нему работает «забрать ход» */
@@ -885,15 +894,15 @@ function trBegin(target){
   $id("trainbtn").classList.add("on");
   $id("trainbtn").textContent = "✕ Выйти из тренажёра";
   trRender();
-  trWhite();
+  trReply();
 }
 
-/* ---- ход белых: играем по текущему целевому варианту ---- */
-function trWhite(){
+/* ---- ход соперника: играем по текущему целевому варианту ---- */
+function trReply(){
   if(!tr || tr.done) return;
   const v = VARS[tr.target];
   if(tr.path.length >= v.moves.length){ trFinish(); return; }
-  if(tr.g.turn() !== "b"){
+  if(tr.g.turn() !== tr.side){
     tr.wait = true; trRender();
     clearTimeout(trTimer);
     trTimer = setTimeout(()=>{
@@ -911,7 +920,7 @@ function trWhite(){
 
 /* ---- ход пользователя ---- */
 function trDrop(from, to){
-  if(!tr || tr.done || tr.wait || tr.g.turn() !== "b") return "snapback";
+  if(!tr || tr.done || tr.wait || tr.g.turn() !== tr.side) return "snapback";
   const v = VARS[tr.target], expect = v.moves[tr.path.length];
   const pm = expect && expect.match(/=([QRBN])/);      /* превращение — как в книге */
   let m = null;
@@ -949,7 +958,7 @@ function trAccept(m, newTarget){
   if(newTarget != null) tr.target = newTarget;
   if(tr.path.length >= VARS[tr.target].moves.length){ trFinish(); return; }
   trRender();
-  trWhite();
+  trReply();
 }
 /* коротко подсветить, что ход вообще нелегальный (за ошибку это не считаем) */
 let trSayTimer = null;
@@ -972,7 +981,7 @@ function trShow(){
   tr.stack.push(snap); tr.rewound = false;
   tr.path.push(san); tr.last = m; tr.wrong = null; tr.switched = null; tr.offbook = null; tr.shown = san;
   if(tr.path.length >= VARS[tr.target].moves.length){ trFinish(); return; }
-  trRender(); trWhite();
+  trRender(); trReply();
 }
 /* Забрать ход. Откатываем к позиции перед своим последним ходом — то есть
    снимаем и ответ белых, и свой ход, и снова оказываемся перед выбором.
@@ -1035,10 +1044,10 @@ function trRender(){
 
   if(tr.done){ paintGauge(v.cp ? v.cp[tr.path.length] : null, v.tag); }
   else { paintGauge(null, "🎓"); }
+  const мой = SIDE_WORDS[tr.side].род, чужой = SIDE_WORDS[tr.side === "w" ? "b" : "w"].тв;
   $id("hint").textContent = tr.done ? "вариант пройден"
-                          : tr.wait ? "белые отвечают"
-                          : tr.stack.length ? "тащи фигуру за чёрных · ◀ забрать ход"
-                          : "тащи фигуру за чёрных";
+                          : tr.wait ? чужой + " отвечают"
+                          : "тащи фигуру за " + мой + (tr.stack.length ? " · ◀ забрать ход" : "");
 
   const note = $id("note"), subs = $id("subs");
   $id("missed").classList.remove("on");
@@ -1093,10 +1102,10 @@ function trRender(){
   } else {
     note.className = "note";
     const state = tr.illegal ? tr.illegal
-                : tr.wait    ? "белые думают"
+                : tr.wait    ? чужой + " думают"
                 : tr.switched ? "переключились"
                 : tr.rewound ? "ход забран"
-                : "твой ход за чёрных";
+                : "твой ход за " + мой;
     note.innerHTML =
       `<div class="head"><b>тренажёр</b><span class="cnt${tr.illegal?" bad":""}">${state}</span></div>`+
       (tr.switched
@@ -1106,8 +1115,8 @@ function trRender(){
           `назад берутся только принятые ходы.</p>`
         : tr.shown
         ? `<p style="color:var(--mut)">Подсказка: сыграно <b>${tr.shown}</b>.</p>`
-        : `<p style="color:var(--mut)">Приложение играет за белых по одному из вариантов книги. `+
-          `Любой книжный ответ засчитывается.</p>`)+
+        : `<p style="color:var(--mut)">Приложение играет за ${чужой === "белые" ? "белых" : "чёрных"} `+
+          `по одному из вариантов книги. Любой книжный ответ засчитывается.</p>`)+
       `<div class="trline">${tr.path.length ? trLine() : "—"}</div>`;
     add(null, "Показать ход", trShow);
     add(null, "Не знаю, дальше", trGiveUp);

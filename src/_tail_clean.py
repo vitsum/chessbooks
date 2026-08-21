@@ -50,16 +50,17 @@ for v in V:
 # Тренажёр просит повторить ходы чёрных, поэтому две группы вариантов он
 # по умолчанию не берёт (в приложении их можно включить руками):
 #   * партии целиком — их не учат наизусть;
-#   * линии, где показан плохой ход ЗА ЧЁРНЫХ («Ловушка: 4…Kf6?») — просить
-#     повторить такой ход нельзя. Плохие ходы белых наоборот полезны: чёрные
-#     учатся их наказывать, такие варианты остаются в тренировке.
+#   * линии, где показан плохой ход ЗА ТУ СТОРОНУ, ЗА КОТОРУЮ ИДЁТ РЕПЕРТУАР
+#     («Ловушка: 4…Kf6?») — просить повторить такой ход нельзя. Плохие ходы
+#     соперника наоборот полезны: их учатся наказывать, такие варианты остаются.
 import re as _re
 _NUMMOVE = _re.compile(r"^(\d+)(\.\.\.|…|\.)(.*)$")
 _SAN     = _re.compile(r"^(?:O-O(?:-O)?|[KQRBN]?[a-h]?[1-8]?x?[a-h][1-8](?:=[QRBN])?)"
                        r"[+#]?([?!]*)$")
 
-def _black_blunder(title):
-    """В заголовке варианта плохим помечен ход чёрных?"""
+def _own_blunder(title, own=None):
+    """В заголовке варианта плохим помечен ход своей стороны?"""
+    own = own or globals().get("SIDE", "b")
     side = None
     for w in title.replace("(", " ").replace(")", " ").split():
         m = _NUMMOVE.match(w)
@@ -72,14 +73,14 @@ def _black_blunder(title):
         if not sm:
             side = side if m else None
             continue
-        if side == "b" and "?" in sm.group(1).replace("!?", ""):
+        if side == own and "?" in sm.group(1).replace("!?", ""):
             return True
     return False
 
 _off = []
 for v in V:
     why = ("партия целиком" if "Партии целиком" in v["chapter"]
-           else "ошибка за чёрных" if _black_blunder(v["title"]) else None)
+           else "ошибка за свою сторону" if _own_blunder(v["title"]) else None)
     v["off"] = bool(why)
     if why: _off.append((v["id"], why, v["title"]))
 if _off:
