@@ -107,7 +107,10 @@ def check(books=None):
         for v in json.load(open(data_path(book), encoding="utf-8")):
             cp = v.get("cp")
             if not cp: continue
-            for i in range(1, len(cp)):
+            # первый ход пропускаем: это выбор дебюта, а не ошибка записи.
+            # Stockfish считает 1.g4 примерно на −1.3 за белых — так и есть,
+            # но книга про Гроб именно про это, флагом тут делу не поможешь.
+            for i in range(2, len(cp)):
                 white = i % 2 == 1
                 loss = (cp[i-1]-cp[i]) if white else (cp[i]-cp[i-1])
                 if loss > 160:

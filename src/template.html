@@ -192,6 +192,8 @@ h1{font-family:var(--disp);font-weight:600;font-size:clamp(22px,6vw,40px);line-h
 .note .trline{font-family:var(--mono);font-size:13.5px;line-height:1.95;margin-top:7px;color:var(--mut)}
 .note .trline b{color:var(--tx);font-weight:400}
 .note .trline i{color:var(--gold);font-style:normal}
+.subs button.drill{border-left-color:#7FBF8E}
+.subs button.drill:hover{border-color:#7FBF8E}
 .subs button.go{background:var(--gold);color:var(--ink);border-color:var(--gold);
   font-family:var(--disp);text-transform:uppercase;letter-spacing:.05em}
 .subs button.go:hover{background:#F2BB53}
@@ -676,6 +678,12 @@ function render(){
                     render(); };
     subsBox.appendChild(b);
   });
+  /* отсюда можно сразу сесть разыгрывать именно этот вариант */
+  const drill=document.createElement("button");
+  drill.className="drill";
+  drill.innerHTML=`🎓 Тренировать этот вариант<span class="mv">разыграть «${v.title}» с первого хода</span>`;
+  drill.onclick=()=>trBegin(vi);
+  subsBox.appendChild(drill);
 
   const note=$id("note");
   clearTimeout(dwell);
@@ -885,10 +893,10 @@ function trBegin(target){
   if(expl) closeExpl();
   sub = null;
   const set = activeIdx();
-  if(!set.length) return;
+  if(target == null && !set.length) return;   /* явную цель гоняем и вне выборки */
   tr = {g:new ChessCls(), side:SIDE(), path:[], target: target != null ? target : trPick(set),
-        errs:0, wrong:null, offbook:null, switched:null, shown:null, illegal:null,
-        last:null, done:false, wait:false, credited:[],
+        errs:0, wrong:null, offbook:null, shown:null, illegal:null,
+        last:null, done:false, wait:false, credited:[], chosen: target != null,
         /* снимок перед каждым ходом чёрных — по нему работает «забрать ход» */
         stack:[], rewound:false};
   $id("trainbtn").classList.add("on");
@@ -927,18 +935,18 @@ function trDrop(from, to){
   try{ m = tr.g.move({from, to, promotion: pm ? pm[1].toLowerCase() : "q"}); }catch(e){ m = null; }
   if(!m){ trSay(null); return "snapback"; }
 
-  if(m.san === expect){ trAccept(m, null); return; }
+  if(m.san === expect){ trAccept(m); return; }
 
-  /* ход не по цели, но, может быть, он есть в другом варианте из этой же позиции */
+  /* Ход не тот, что в целевом варианте. Но если он есть в книге — это не ошибка:
+     ход правильный, просто сейчас тренируется другая линия. Возвращаем фигуру
+     и говорим, куда этот ход ведёт. Переключаться на ходу не будем: тренируем то,
+     что начали, иначе прогон растекается по всей книге. */
   const fits = i => pathFits(VARS[i], tr.path) && VARS[i].moves[tr.path.length] === m.san;
-  const alts = activeIdx().filter(i => i !== tr.target && fits(i));
-  if(alts.length){ trAccept(m, trPick(alts)); return; }
-
-  /* ход книжный, но его вариант выключен из тренировки — ошибкой не считаем */
-  const off = VARS.map((v,i)=>i).filter(i => i !== tr.target && fits(i));
+  const other = VARS.map((v,i)=>i).filter(i => i !== tr.target && fits(i));
   tr.g.undo();
-  if(off.length){
-    tr.offbook = {played:m.san, num:trNum(tr.path.length), title:VARS[off[0]].title};
+  if(other.length){
+    tr.offbook = {played:m.san, num:trNum(tr.path.length),
+                  title:VARS[other[0]].title, more:other.length - 1};
     tr.wrong = null;
     trRender();
     return "snapback";
@@ -950,12 +958,10 @@ function trDrop(from, to){
   if(navigator.vibrate) navigator.vibrate([25,60,25]);
   return "snapback";
 }
-function trAccept(m, newTarget){
+function trAccept(m){
   tr.stack.push({target:tr.target, len:tr.path.length});
   tr.path.push(m.san); tr.last = m; tr.wrong = null; tr.shown = null; tr.offbook = null;
   tr.rewound = false;
-  tr.switched = newTarget != null ? VARS[newTarget].title : null;
-  if(newTarget != null) tr.target = newTarget;
   if(tr.path.length >= VARS[tr.target].moves.length){ trFinish(); return; }
   trRender();
   trReply();
@@ -979,7 +985,7 @@ function trShow(){
   let m = null; try{ m = tr.g.move(san); }catch(e){ m = null; }
   if(!m){ tr.done = true; tr.fatal = san; trRender(); return; }
   tr.stack.push(snap); tr.rewound = false;
-  tr.path.push(san); tr.last = m; tr.wrong = null; tr.switched = null; tr.offbook = null; tr.shown = san;
+  tr.path.push(san); tr.last = m; tr.wrong = null; tr.offbook = null; tr.shown = san;
   if(tr.path.length >= VARS[tr.target].moves.length){ trFinish(); return; }
   trRender(); trReply();
 }
@@ -995,11 +1001,21 @@ function trBack(toStart){
   while(tr.path.length > snap.len){ tr.g.undo(); tr.path.pop(); }
   tr.target = snap.target;
   tr.wait = false;
-  tr.wrong = tr.offbook = tr.switched = tr.shown = tr.illegal = null;
+  tr.wrong = tr.offbook = tr.shown = tr.illegal = null;
   tr.rewound = true;
   const h = tr.g.history({verbose:true});
   tr.last = h.length ? h[h.length-1] : null;
   trRender();
+}
+
+/* Открыть текущий вариант в книге на том же ходу. Прогон не засчитываем —
+   это не провал, а «хочу посмотреть»: вариант просто не пройден до конца. */
+function trToBook(){
+  if(!tr) return;
+  const t = tr.target, p = tr.path.length;
+  closeTrainer();
+  vi = t; pi = p; sub = null;
+  render();
 }
 
 function trGiveUp(){
@@ -1037,7 +1053,7 @@ function trRender(){
   setTimeout(paintHL, 30);
 
   $id("pch").textContent = "тренировка · " + BOOKS[bi].short;
-  $id("pnm").textContent = tr.done ? v.title : "вариант скрыт";
+  $id("pnm").textContent = (tr.done || tr.chosen) ? v.title : "вариант скрыт";
   $id("varpos").textContent = tr.done
     ? `${v.chapter} · ошибок ${tr.errs}`
     : `ход ${Math.floor(tr.path.length/2)+1} · ошибок ${tr.errs} · в тренировке ${activeIdx().length}`;
@@ -1080,13 +1096,16 @@ function trRender(){
     add(null, "Разобрать в книге", ()=>{ const t=tr.target; closeTrainer(); vi=t; pi=0; sub=null; render(); });
     add(null, "Настройка тренировки", openTr);
   } else if(tr.offbook){
-    note.className = "note";
+    note.className = "note ok";
     note.innerHTML =
       `<div class="head"><b>тренажёр</b><span class="cnt">другой вариант</span></div>`+
-      `<p><b>${tr.offbook.num}${tr.offbook.played}</b> — ход книжный, но вариант «${tr.offbook.title}» `+
-      `сейчас выключен из тренировки. Сыграй по-другому или включи его в настройке.</p>`+
+      `<p style="color:#9FD6AC">✓ <b>${tr.offbook.num}${tr.offbook.played}</b> — ход правильный, `+
+      `он ведёт в вариант «${tr.offbook.title}»`+
+      (tr.offbook.more ? ` (и ещё ${plural(tr.offbook.more,"вариант","варианта","вариантов")})` : "")+
+      `. Но сейчас мы тренируем другой — сыграй иначе. Ошибка не засчитана.</p>`+
       `<div class="trline">${trLine()}</div>`;
     add(null, "Показать ход", trShow);
+    add(null, "Открыть в книге", trToBook);
     add(null, "Не знаю, дальше", trGiveUp);
     add(null, "Настройка тренировки", openTr);
   } else if(tr.wrong){
@@ -1097,20 +1116,18 @@ function trRender(){
       `Попробуй ещё или посмотри ответ.</p>`+
       `<div class="trline">${trLine()}</div>`;
     add(null, "Показать ход", trShow);
+    add(null, "Открыть в книге", trToBook);
     add(null, "Не знаю, дальше", trGiveUp);
     add(null, "Настройка тренировки", openTr);
   } else {
     note.className = "note";
     const state = tr.illegal ? tr.illegal
                 : tr.wait    ? чужой + " думают"
-                : tr.switched ? "переключились"
                 : tr.rewound ? "ход забран"
                 : "твой ход за " + мой;
     note.innerHTML =
       `<div class="head"><b>тренажёр</b><span class="cnt${tr.illegal?" bad":""}">${state}</span></div>`+
-      (tr.switched
-        ? `<p style="color:#7FBF8E">✓ тоже книжный ход — дальше тренируем вариант «${tr.switched}»</p>`
-        : tr.rewound
+      (tr.rewound
         ? `<p style="color:var(--mut)">Ход забран. На статистику это не влияет — `+
           `назад берутся только принятые ходы.</p>`
         : tr.shown
@@ -1119,6 +1136,7 @@ function trRender(){
           `по одному из вариантов книги. Любой книжный ответ засчитывается.</p>`)+
       `<div class="trline">${tr.path.length ? trLine() : "—"}</div>`;
     add(null, "Показать ход", trShow);
+    add(null, "Открыть в книге", trToBook);
     add(null, "Не знаю, дальше", trGiveUp);
     add(null, "Настройка тренировки", openTr);
   }
@@ -1257,6 +1275,7 @@ document.addEventListener("keydown",e=>{
     else if(e.key==="ArrowLeft"){ trBack(); e.preventDefault(); }
     else if(e.key==="Home"){ trBack(true); e.preventDefault(); }
     else if(e.key==="Enter" && tr.done){ trBegin(); e.preventDefault(); }
+    else if(e.key==="b"||e.key==="B"||e.key==="и"||e.key==="И"){ trToBook(); e.preventDefault(); }
     else if(e.key>="1" && e.key<="9"){ const i=+e.key-1; if(i<BOOKS.length && i!==bi){ setBook(i); e.preventDefault(); } }
     return;
   }

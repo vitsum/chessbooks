@@ -30,7 +30,7 @@ PARTS = {
 }
 
 SUB_PLIES = 10          # сколько полуходов побочной линии проигрывать на доске
-MAX_PLIES = 40          # длиннее в репертуаре ни к чему
+DEEP_PLIES = 120       # предел на текстовую расшифровку вложенной вариации
 
 
 def clean(text):
@@ -78,6 +78,36 @@ def line_sans(node, limit):
     return out
 
 
+def glyphs(node):
+    return "".join(GLYPH[n] for n in sorted(node.nags) if n in GLYPH)
+
+
+def render(node, limit=DEEP_PLIES, top=True):
+    """Вариация со всеми вложениями -> текст, как в книге:
+    `4.Qb3 Qc7 5.cxd5 cxd5 (5…e6 6.h3! Bf5 7.e4) 6.Nc3 and now:`
+
+    Комментарии внутри вариаций — это и есть основной разбор Бладгуда, на главной
+    линии их всего 97 из 577. Поэтому вариации расшифровываются целиком, а не
+    выбрасываются; scan.py потом сам сделает ходы в этом тексте кликабельными."""
+    out, b, k = [], node.parent.board(), 0
+    while node is not None and k < limit:
+        white = b.turn == chess.WHITE
+        san = b.san(node.move)
+        num = f"{b.fullmove_number}." if white else (f"{b.fullmove_number}…" if k == 0 and top else "")
+        out.append(num + san + glyphs(node))
+        if clean(node.comment):
+            out.append(clean(node.comment))
+        b.push(node.move)
+        kids = node.variations
+        for alt in kids[1:]:
+            inner = render(alt, limit=DEEP_PLIES, top=True)
+            if inner:
+                out.append("(" + inner + ")")
+        node = kids[0] if kids else None
+        k += 1
+    return " ".join(out)
+
+
 def convert(path):
     f = io.open(path, encoding="utf-8", errors="replace")
     games, part, pending = [], None, None
@@ -119,30 +149,37 @@ def emit(games):
         node, moves, notes, subs = g, [], {}, {}
         root = clean(g.comment)
 
-        while node.variations and len(moves) < MAX_PLIES:
+        while node.variations:
             nxt = node.variations[0]
             key, san = label(board, nxt.move)
 
             # знаки к ходу и авторский текст
             bits = []
-            glyph = "".join(GLYPH[n] for n in sorted(nxt.nags) if n in GLYPH)
+            glyph = glyphs(nxt)
             if glyph:
                 bits.append(f"<b>{san}{glyph}</b>")
             if root and not moves:
                 bits.append(root); root = ""
             if clean(nxt.comment):
                 bits.append(clean(nxt.comment))
-            if bits:
-                notes[key] = " — ".join(bits) if len(bits) > 1 else bits[0]
 
-            # побочные линии из этой же позиции
+            # альтернативы этому ходу — целиком, с их собственным разбором
             alts = []
+            texts = []
             for alt in node.variations[1:]:
                 sans = line_sans(alt, SUB_PLIES)
                 if sans:
                     alts.append((f"вместо {san}", " ".join(sans), "before"))
+                t = render(alt)
+                if t:
+                    texts.append(t)
+            if texts:
+                bits.append("Вместо " + san + ": " + " | ".join(texts))
             if alts:
                 subs[key] = alts
+
+            if bits:
+                notes[key] = " — ".join(bits) if len(bits) > 1 else bits[0]
 
             moves.append(san); board.push(nxt.move); node = nxt
 
