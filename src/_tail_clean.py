@@ -49,7 +49,7 @@ for v in V:
 # ================= оценки Stockfish =================
 import os
 if os.path.exists(CP_IN):
-    CP = json.load(open(CP_IN))
+    CP = json.load(open(CP_IN, encoding="utf-8"))
     for v in V:
         if v["id"] in CP: v["cp"] = CP[v["id"]]
 
@@ -71,6 +71,7 @@ for _, grp in groupby(V, key=lambda x: x["chapter"]):
         v["line"] = ("… " if k else "") + " ".join(tail) + (" …" if len(v["labels"]) > k+8 else "")
         del v["labels"]
 
-json.dump(V, open(DATA_OUT,"w"), ensure_ascii=False)
+# encoding указываем явно: без него на Windows файл пишется в cp1251 и сборка падает
+json.dump(V, open(DATA_OUT, "w", encoding="utf-8"), ensure_ascii=False)
 print("вариантов:", len(V), "| ходов всего:", sum(len(v["moves"]) for v in V),
       "| комментариев:", sum(len(v["notes"]) for v in V))
