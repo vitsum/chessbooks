@@ -286,6 +286,12 @@ h1{font-family:var(--disp);font-weight:600;font-size:clamp(22px,6vw,40px);line-h
   border-bottom:1px dashed rgba(229,167,51,.7);padding-bottom:1px}
 .note a.inl:hover{background:rgba(229,167,51,.14)}
 .note a.inl::before{content:"▷ ";font-size:.85em;opacity:.9}
+/* ссылка на мою партию на lichess — уводит со страницы, поэтому выглядит иначе,
+   чем побочная линия: та проигрывается тут же на доске */
+.note a.game{color:var(--mut);font-family:var(--mono);font-size:.9em;
+  border-bottom:1px dotted var(--rule);text-decoration:none}
+.note a.game:hover{color:var(--tx);border-bottom-color:var(--mut)}
+.note a.game::before{content:"↗ ";opacity:.7}
 @keyframes pop{
   0%{background:#22424A;border-left-color:#FFD37A;transform:translateX(4px)}
   60%{background:#1B383D;border-left-color:var(--gold);transform:translateX(0)}
