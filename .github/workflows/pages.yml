@@ -7,9 +7,6 @@ name: Публикация на GitHub Pages
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - 'README.md'
-      - 'docs/**'
   workflow_dispatch:
 
 permissions:
