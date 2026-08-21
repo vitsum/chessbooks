@@ -4,26 +4,32 @@
 
     python3 run.py gen   <book>   — собрать data/data_<book>.json из src/_body_<book>.py
     python3 run.py eval  <book>   — прогнать Stockfish, записать data/cp_<book>.json
-    python3 run.py build <book>   — собрать dist/<...>.html (всё вшито, интернет не нужен)
+    python3 run.py build [цель]   — собрать html (всё вшито, интернет не нужен)
     python3 run.py check [<book>] — автопроверка на просмотры по оценкам движка
     python3 run.py all   <book>   — gen + eval + gen + build
 
-<book> ∈ alekhine | pirc | kid  (или "all" для build/gen)
+<book> ∈ alekhine | pirc | kid  (или "all" для gen/eval/check)
+
+Цель для build:
+    one   — (по умолчанию) все книги в одном файле dist/chess-defences.html
+    <book>— одна книга отдельным файлом
+    all   — каждая книга отдельно И объединённый файл
 """
-import sys, os, json, base64, subprocess, time
+import sys, os, json, base64, time
 ROOT = os.path.dirname(os.path.abspath(__file__))
 SRC, DATA, DIST, VEND = (os.path.join(ROOT, d) for d in ("src", "data", "dist", "vendor"))
 sys.path.insert(0, SRC)
-from books import BOOKS
+from books import BOOKS, META_KEYS, ONE_OUT, ONE_TITLE
 
 STOCKFISH = os.environ.get("STOCKFISH", "/usr/games/stockfish")
 data_path = lambda b: os.path.join(DATA, f"data_{b}.json")
 cp_path   = lambda b: os.path.join(DATA, f"cp_{b}.json")
+read      = lambda p: open(p, encoding="utf-8").read()
 
 
 def gen(book):
     """Склеиваем _head + _body_<book> + _tail и исполняем: получаем data_<book>.json."""
-    parts = [open(os.path.join(SRC, n), encoding="utf-8").read()
+    parts = [read(os.path.join(SRC, n))
              for n in ("_head.py", f"_body_{book}.py", "_tail_clean.py")]
     ns = {"DATA_OUT": data_path(book), "CP_IN": cp_path(book), "__name__": "__gen__"}
     os.chdir(SRC)                      # чтобы работал `import scan`
@@ -48,15 +54,13 @@ def evaluate(book, depth=16, tmax=0.9):
         out[v["id"]] = cps
         print(f"  {v['id']:14} {len(cps):3} поз.  [{time.time()-t0:.0f}s]", flush=True)
     eng.quit()
-    json.dump(out, open(cp_path(book), "w"))
+    json.dump(out, open(cp_path(book), "w", encoding="utf-8"))
     print("готово:", sum(len(x) for x in out.values()), "позиций за", round(time.time()-t0), "с")
 
 
-def build(book):
-    """Шаблон + библиотеки + фигуры + данные -> один самодостаточный html."""
-    meta = BOOKS[book]
-    html = open(os.path.join(SRC, "template.html"), encoding="utf-8").read()
-    lib = lambda n: open(os.path.join(VEND, n), encoding="utf-8").read()
+def _assets(html):
+    """Вшиваем библиотеки, css и фигуры."""
+    lib = lambda n: read(os.path.join(VEND, n))
     for token, val in [("__JQUERY__", lib("jquery.min.js")),
                        ("__CHESSJS__", lib("chess.cjs.js")),
                        ("__CBJS__", lib("chessboard-1.0.0.min.js")),
@@ -69,23 +73,46 @@ def build(book):
         if f.endswith(".svg"):
             raw = open(os.path.join(VEND, "pieces", f), "rb").read()
             pieces[f[:-4]] = "data:image/svg+xml;base64," + base64.b64encode(raw).decode()
-    html = html.replace("__PIECES__", json.dumps(pieces))
+    return html.replace("__PIECES__", json.dumps(pieces))
 
-    V = json.load(open(data_path(book), encoding="utf-8"))
-    html = html.replace("__DATA__", json.dumps(V, ensure_ascii=False))
 
-    # подстановка заголовков книги
-    d = BOOKS["alekhine"]
-    html = (html.replace(f"<title>{d['title']}</title>", f"<title>{meta['title']}</title>")
-                .replace(d["eyebrow"], meta["eyebrow"])
-                .replace(f"<h1>{d['h1']}</h1>", f"<h1>{meta['h1']}</h1>")
-                .replace(d["sub"], meta["sub"])
-                .replace(d["credit"], meta["credit"]))
+def _write(ids, out, title):
+    """Шаблон + библиотеки + данные перечисленных книг -> один самодостаточный html."""
+    html = _assets(read(os.path.join(SRC, "template.html")))
+
+    payload = []
+    for b in ids:
+        meta = BOOKS[b]
+        payload.append(dict(id=b, **{k: meta[k] for k in META_KEYS},
+                            vars=json.load(open(data_path(b), encoding="utf-8"))))
+
+    for token, val in [("__TITLE__", title),
+                       ("__BOOKS__", json.dumps(payload, ensure_ascii=False))]:
+        assert token in html, token
+        html = html.replace(token, val)
 
     os.makedirs(DIST, exist_ok=True)
-    open(os.path.join(DIST, meta["out"]), "w", encoding="utf-8").write(html)
-    print(f"{meta['out']}: {round(len(html)/1024)} KB, вариантов {len(V)}, "
-          f"ходов {sum(len(v['moves']) for v in V)}, комментариев {sum(len(v['notes']) for v in V)}")
+    # newline="\n": иначе на Windows в файл уезжают CRLF и каждая сборка выглядит как правка
+    open(os.path.join(DIST, out), "w", encoding="utf-8", newline="\n").write(html)
+
+    nv = sum(len(p["vars"]) for p in payload)
+    nm = sum(len(v["moves"]) for p in payload for v in p["vars"])
+    nn = sum(len(v["notes"]) for p in payload for v in p["vars"])
+    print(f"{out}: {round(len(html)/1024)} KB, книг {len(ids)}, вариантов {nv}, "
+          f"ходов {nm}, комментариев {nn}")
+
+
+def build(target="one"):
+    """target: 'one' — всё в одном файле, 'all' — и по книгам, и вместе, иначе id книги."""
+    if target in ("one", "all"):
+        if target == "all":
+            for b in BOOKS:
+                _write([b], BOOKS[b]["out"], BOOKS[b]["title"])
+        _write(list(BOOKS), ONE_OUT, ONE_TITLE)
+    else:
+        if target not in BOOKS:
+            sys.exit(f"неизвестная книга: {target}; есть {', '.join(BOOKS)}")
+        _write([target], BOOKS[target]["out"], BOOKS[target]["title"])
 
 
 def check(books=None):
@@ -111,12 +138,13 @@ def check(books=None):
 
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "help"
-    arg = sys.argv[2] if len(sys.argv) > 2 else "all"
+    arg = sys.argv[2] if len(sys.argv) > 2 else ("one" if cmd == "build" else "all")
     targets = list(BOOKS) if arg == "all" else [arg]
     if cmd == "gen":     [gen(b) for b in targets]
     elif cmd == "eval":  [evaluate(b) for b in targets]
-    elif cmd == "build": [build(b) for b in targets]
+    elif cmd == "build": build(arg)
     elif cmd == "check": check(None if arg == "all" else targets)
     elif cmd == "all":
-        for b in targets: gen(b); evaluate(b); gen(b); build(b)
+        for b in targets: gen(b); evaluate(b); gen(b)
+        build("all")
     else: print(__doc__)

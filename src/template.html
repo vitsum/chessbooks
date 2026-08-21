@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Защита Алехина — части 1–2</title>
+<title>__TITLE__</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600&family=PT+Serif:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -30,6 +30,20 @@ header{border-bottom:1px solid var(--rule);padding-bottom:12px;margin-bottom:14p
 h1{font-family:var(--disp);font-weight:600;font-size:clamp(22px,6vw,40px);line-height:1.03;
   text-transform:uppercase;margin:5px 0 3px}
 .src{font-size:12.5px;color:var(--mut);font-style:italic}
+
+/* ---------- переключатель книг ---------- */
+.books{display:flex;gap:6px;margin-bottom:14px}
+.books button{flex:1;min-width:0;background:var(--panel);border:1px solid var(--rule);
+  border-radius:2px;color:var(--mut);padding:9px 8px 7px;cursor:pointer;
+  font-family:var(--disp);font-size:13.5px;text-transform:uppercase;letter-spacing:.04em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2}
+.books button:hover{border-color:var(--gold);color:var(--tx)}
+.books button[aria-selected="true"]{background:var(--panel2);border-color:var(--gold);
+  color:var(--gold);box-shadow:inset 0 -2px 0 var(--gold)}
+.books button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.books button .n{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;
+  color:var(--mut);margin-top:3px;text-transform:none}
+@media(max-width:420px){.books button{font-size:12px;padding:8px 5px 6px}}
 
 /* ---------- выбор варианта ---------- */
 .pickrow{display:flex;gap:6px;align-items:stretch}
@@ -169,6 +183,7 @@ h1{font-family:var(--disp);font-weight:600;font-size:clamp(22px,6vw,40px);line-h
 .note .head{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
   color:var(--mut);margin-bottom:5px;display:flex;justify-content:space-between;gap:10px}
 .note .head b{color:var(--gold);font-weight:400}
+.note .cnt.bad{color:var(--brick)}
 .note .cnt{color:var(--mut);opacity:.8;white-space:nowrap}
 .note p{color:#CFDCD8}
 .note .empty{color:var(--mut);font-style:italic}
@@ -234,10 +249,12 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
 </head>
 <body>
 
+<nav class="books" id="books" role="tablist" aria-label="Книга"></nav>
+
 <header>
-  <div class="eyebrow">Алексей Корнев · Play the Alekhine Defence · 2019</div>
-  <h1>Защита Алехина</h1>
-  <div class="src">Части 1–2, главы 1–8. Репертуар за чёрных — доска развёрнута с их стороны. В книге 5 частей и 16 глав.</div>
+  <div class="eyebrow" id="eyebrow"></div>
+  <h1 id="h1"></h1>
+  <div class="src" id="src"></div>
 </header>
 
 <div class="pickrow">
@@ -293,7 +310,8 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
 
 <footer>
   <kbd>←</kbd> <kbd>→</kbd> — ходы, <kbd>↑</kbd> <kbd>↓</kbd> — варианты, <kbd>C</kbd> — к следующему комментарию, <kbd>Home</kbd> / <kbd>End</kbd> — в начало и в конец. Градусник — Stockfish 16, глубина 16, посчитано заранее; символ в строке ниже доски — оценка из книги.
-  Доска: chessboard.js + chess.js, фигуры Cburnett. Комментарии — пересказ разбора Корнева своими словами.
+  <span id="bookkeys"><kbd>1</kbd>…<kbd>9</kbd> — переключить книгу. </span>Доска: chessboard.js + chess.js, фигуры Cburnett.
+  <span id="credit"></span>
 </footer>
 
 <script>/* jQuery 3.7.1 | MIT */
@@ -308,12 +326,12 @@ __CBJS__
 </script>
 <script>
 const PIECES = __PIECES__;
-const VARS   = __DATA__;
+const BOOKS  = __BOOKS__;      /* [{id, short, h1, eyebrow, sub, credit, vars:[...]}] */
 const ChessCls = (typeof Chess !== "undefined") ? Chess : module.exports.Chess;
 const $id = id => document.getElementById(id);
 
 /* ---- разбор ходов движком ---- */
-VARS.forEach(v=>{
+BOOKS.forEach(bk => bk.vars.forEach(v=>{
   const g = new ChessCls();
   const out = [{fen:g.fen(), san:null, num:""}];
   v.moves.forEach((san,i)=>{
@@ -324,13 +342,14 @@ VARS.forEach(v=>{
   });
   v.plies = out;
   v.noteIdx = out.map((p,i)=>p.note?i:-1).filter(i=>i>=0);
-});
+}));
 
-let vi = 0, pi = 0;
+let bi = 0, vi = 0, pi = 0;
+let VARS = BOOKS[0].vars;             /* варианты текущей книги */
 let sub = null;
-let expl = null;                      /* режим свободной расстановки */
+let expl = null;                      /* режим проводника: свободные ходы по доске */
 
-/* индекс всех позиций книги: ключ = FEN без счётчиков, поэтому перестановки ходов ловятся автоматически */
+/* индекс всех позиций всех книг: ключ = FEN без счётчиков, перестановки ходов ловятся автоматически */
 const KEY = f => f.split(" ").slice(0,4).join(" ");
 const INDEX = {};                       /* {cap, plies, i} — просмотр побочной линии */
 
@@ -362,27 +381,38 @@ function paintGauge(cp, sym){
 const seen = new Set();          /* прочитанные комментарии */
 let dwell = null;
 
-VARS.forEach((v,k)=>{
+BOOKS.forEach((bk,b)=>bk.vars.forEach((v,k)=>{
   v.plies.forEach((p,i)=>{
     const key = KEY(p.fen);
     const cell = INDEX[key] || (INDEX[key] = {moves:{}, hits:[]});
-    cell.hits.push({vi:k, ply:i});
+    cell.hits.push({bi:b, vi:k, ply:i});
     const nx = v.plies[i+1];
     if(nx){
       const mv = cell.moves[nx.san] || (cell.moves[nx.san] = {n:0});
       mv.n++;
     }
   });
-});
+}));
 
 const board = Chessboard("board", {
   position:"start", orientation:"black", showNotation:true, draggable:true,
-  onDragStart: () => !!expl,
+  dropOffBoard:"snapback",
+  /* тянуть фигуры можно только в проводнике и только пока партия не кончилась */
+  onDragStart: () => !!expl && !expl.g.isGameOver(),
   onDrop: (from, to) => {
-    const m = expl.g.move({from, to, promotion:"q"});
-    if(!m) return "snapback";
-    expl.last = m; setTimeout(renderExpl, 0);
+    if(!expl) return "snapback";
+    /* chess.js 1.0-beta бросает исключение на нелегальном ходе. Без catch оно вылетает
+       из обработчика chessboard.js, тот не успевает вернуть фигуру — и доска
+       расходится с партией: дальше ломается всё, вплоть до выхода из проводника. */
+    let m = null;
+    try { m = expl.g.move({from, to, promotion:"q"}); } catch(e){ m = null; }
+    if(!m){ explWarn(to === "offboard" ? "фигуру не убрать с доски"
+                                      : from + "–" + to + " — так не сходить"); return "snapback"; }
+    expl.err = null; expl.last = m; setTimeout(renderExpl, 0);
   },
+  /* после анимации приводим доску к состоянию партии: рокировка, взятие на проходе
+     и превращение двигают не только перетащенную фигуру */
+  onSnapEnd: () => { if(expl) board.position(expl.g.fen(), false); },
   pieceTheme: p => PIECES[p], moveSpeed:190, appearSpeed:140, trashSpeed:120
 });
 let lastW = 0;
@@ -392,8 +422,8 @@ new ResizeObserver(es=>{
 }).observe($id("board"));
 
 /* ---- список вариантов ---- */
-(function buildOpts(){
-  const box=$id("opts"); let chapter=null;
+function buildOpts(){
+  const box=$id("opts"); box.innerHTML=""; let chapter=null;
   VARS.forEach((v,i)=>{
     if(v.chapter!==chapter){
       chapter=v.chapter;
@@ -409,7 +439,34 @@ new ResizeObserver(es=>{
     b.onclick=()=>{ sub=null; vi=i; pi=0; closeModal(); render(); };
     box.appendChild(b);
   });
+}
+
+/* ---- переключатель книг ---- */
+(function buildBooks(){
+  const box=$id("books");
+  BOOKS.forEach((bk,i)=>{
+    const b=document.createElement("button");
+    b.type="button"; b.setAttribute("role","tab"); b.dataset.b=i;
+    b.innerHTML=`${bk.short}<span class="n">${bk.vars.length} вар.</span>`;
+    b.onclick=()=>setBook(i);
+    box.appendChild(b);
+  });
+  if(BOOKS.length < 2){ box.style.display="none"; $id("bookkeys").style.display="none"; }
 })();
+
+function setBook(i){
+  if(expl) closeExpl();
+  bi = i; VARS = BOOKS[bi].vars; vi = 0; pi = 0; sub = null;
+  paintBook(); buildOpts(); render();
+}
+function paintBook(){
+  const bk = BOOKS[bi];
+  $id("eyebrow").textContent = bk.eyebrow;
+  $id("h1").textContent      = bk.h1;
+  $id("src").textContent     = bk.sub;
+  $id("credit").textContent  = bk.credit;
+  [...$id("books").children].forEach((b,i)=>b.setAttribute("aria-selected", (i===bi)+""));
+}
 function openModal(){
   $id("modal").classList.add("on");
   [...$id("opts").querySelectorAll(".opt")].forEach(o=>
@@ -443,7 +500,7 @@ function paintHL(){
 }
 
 /* ---- пропущенные комментарии ---- */
-const key = i => VARS[vi].id+":"+i;
+const key = i => BOOKS[bi].id+"/"+VARS[vi].id+":"+i;
 function markSeen(i){ seen.add(key(i)); refreshMissed(); drawSheet(); }
 function missedList(){
   return VARS[vi].noteIdx.filter(i => i < pi && !seen.has(key(i)));
@@ -560,15 +617,31 @@ function render(){
 }
 
 /* ---- проводник ---- */
+const BKS = BOOKS.length > 1 ? "книгах" : "книге";
+const EXPL_LABEL = "⚑ Проводник — двигать фигуры и искать позицию в " + BKS;
+$id("explbtn").textContent = EXPL_LABEL;
+function closeExpl(){                       /* только гасит режим, ничего не перерисовывает */
+  expl=null;
+  $id("explbtn").classList.remove("on");
+  $id("explbtn").textContent = EXPL_LABEL;
+  $id("sheet").querySelector("summary").textContent = "Все ходы варианта";
+}
 function toggleExpl(){
-  if(expl){ expl=null; $id("explbtn").classList.remove("on");
-            $id("explbtn").textContent="⚑ Проводник — двигать фигуры и искать позицию в книге";
-            $id("sheet").querySelector("summary").textContent="Все ходы варианта";
-            render(); return; }
-  sub=null; expl={g:new ChessCls(), last:null};
+  if(expl){ closeExpl(); render(); return; }
+  sub=null; expl={g:new ChessCls(), last:null, err:null};
   $id("explbtn").classList.add("on");
   $id("explbtn").textContent="✕ Выйти из проводника";
   renderExpl();
+}
+/* нелегальный ход: показываем подсказку и сами гасим её через пару секунд */
+let warnTimer=null;
+function explWarn(msg){
+  if(!expl) return;
+  expl.err = msg;
+  clearTimeout(warnTimer);
+  warnTimer = setTimeout(()=>{ if(expl && expl.err===msg){ expl.err=null; renderExpl(); } }, 2200);
+  setTimeout(renderExpl, 0);
+  if(navigator.vibrate) navigator.vibrate([12,40,12]);
 }
 $id("explbtn").onclick=toggleExpl;
 
@@ -577,12 +650,12 @@ function renderExpl(){
   board.position(g.fen());
   setTimeout(()=>{
     $(".square-55d63").removeClass("hl");
-    if(expl.last) $("#board .square-"+expl.last.from+", #board .square-"+expl.last.to).addClass("hl");
+    if(expl && expl.last) $("#board .square-"+expl.last.from+", #board .square-"+expl.last.to).addClass("hl");
   }, 30);
 
   $id("gsym").textContent="⚑"; $id("gsym").classList.add("dim");
   $id("cpnum").textContent="—";
-  $id("ev").textContent = cell ? "позиция есть в книге" : "такой позиции в книге нет";
+  $id("ev").textContent = cell ? "позиция есть в " + BKS : "такой позиции в " + BKS + " нет";
   $id("ev").className = "val" + (cell ? "" : " bad");
   $id("subs").innerHTML=""; $id("missed").classList.remove("on");
 
@@ -590,8 +663,15 @@ function renderExpl(){
   for(let i=0;i<hist.length;i++) line.push((i%2?"":(i/2+1)+".")+hist[i]);
   const note=$id("note");
   note.className="note";
-  let html=`<div class="head"><b>проводник</b><span class="cnt">ход ${g.turn()==="w"?"белых":"чёрных"}</span></div>`;
-  html += `<p>${hist.length ? line.join(" ") : "Двигайте фигуры на доске — приложение само найдёт совпадающие варианты, включая перестановки ходов."}</p>`;
+  const state = g.isCheckmate() ? "мат"
+              : g.isStalemate() ? "пат"
+              : g.isDraw()      ? "ничья"
+              : "ход " + (g.turn()==="w"?"белых":"чёрных") + (g.isCheck() ? ", шах" : "");
+  let html=`<div class="head"><b>проводник</b>`+
+    `<span class="cnt${expl.err?" bad":""}">${expl.err || state}</span></div>`;
+  const HINT = "Двигайте фигуры на доске — приложение само найдёт совпадающие варианты"
+             + (BOOKS.length>1 ? " во всех книгах" : "") + ", включая перестановки ходов.";
+  html += `<p>${hist.length ? line.join(" ") : HINT}</p>`;
   if(cell){
     const ms=Object.entries(cell.moves).sort((a,b)=>b[1].n-a[1].n);
     if(ms.length) html += `<div class="expmoves">`+ms.map(([san,d])=>
@@ -599,7 +679,12 @@ function renderExpl(){
   }
   note.innerHTML=html;
   note.querySelectorAll(".expmoves button").forEach(b=>{
-    b.onclick=()=>{ const m=expl.g.move(b.dataset.m); expl.last=m; renderExpl(); };
+    b.onclick=()=>{
+      let m=null;
+      try { m=expl.g.move(b.dataset.m); } catch(e){ m=null; }
+      if(!m){ explWarn(b.dataset.m + " — так не сходить"); return; }
+      expl.err=null; expl.last=m; renderExpl();
+    };
   });
 
   const box=$id("rows"); box.innerHTML="";
@@ -607,17 +692,26 @@ function renderExpl(){
   $id("sheet").querySelector("summary").textContent =
     hits.length ? `Совпадающие варианты (${hits.length})` : "Совпадений нет";
   if(hits.length) $id("sheet").open = true;
-  hits.slice(0,40).forEach(h=>{
-    const v=VARS[h.vi];
+  const CAP = 60;
+  hits.slice(0,CAP).forEach(h=>{
+    const bk=BOOKS[h.bi], v=bk.vars[h.vi];
     const b=document.createElement("button"); b.className="exphit";
     const num = h.ply ? `${Math.ceil(h.ply/2)}${h.ply%2?".":"…"}${v.plies[h.ply].san}` : "начало";
-    b.innerHTML=`<span class="t">${v.title}</span><span class="m">${v.chapter} · после <b>${num}</b></span>`;
-    b.onclick=()=>{ expl=null; $id("explbtn").classList.remove("on");
-      $id("explbtn").textContent="⚑ Проводник — двигать фигуры и искать позицию в книге";
-      $id("sheet").querySelector("summary").textContent="Все ходы варианта";
-      vi=h.vi; pi=h.ply; render(); };
+    b.innerHTML=`<span class="t">${v.title}</span>`+
+      `<span class="m">${bk.short} · ${v.chapter} · после <b>${num}</b></span>`;
+    b.onclick=()=>{
+      closeExpl();
+      bi=h.bi; VARS=BOOKS[bi].vars; vi=h.vi; pi=h.ply; sub=null;
+      paintBook(); buildOpts(); render();
+    };
     box.appendChild(b);
   });
+  if(hits.length > CAP){
+    const more=document.createElement("div");
+    more.className="varpos"; more.style.margin="10px 0";
+    more.textContent=`…и ещё ${hits.length-CAP} — уточните позицию ходами`;
+    box.appendChild(more);
+  }
 
   $id("prev").disabled = $id("first").disabled = (hist.length===0);
   $id("next").disabled = $id("last").disabled = true;
@@ -626,7 +720,7 @@ function renderExpl(){
 
 /* ---- навигация ---- */
 const go = d => {
-  if(expl){ if(d<0 && expl.g.history().length){ expl.g.undo(); expl.last=null; renderExpl(); } return; }
+  if(expl){ if(d<0 && expl.g.history().length){ expl.g.undo(); expl.last=null; expl.err=null; renderExpl(); } return; }
   if(sub){
     const ni = sub.i + d;
     if(ni < 1){ sub = null; render(); return; }
@@ -641,7 +735,7 @@ function nextNote(dir){
 }
 $id("next").onclick=()=>go(1);
 $id("prev").onclick=()=>go(-1);
-$id("first").onclick=()=>{ if(expl){ expl.g.reset(); expl.last=null; renderExpl(); return; } if(sub){sub=null;} else {pi=0;} render();};
+$id("first").onclick=()=>{ if(expl){ expl.g.reset(); expl.last=null; expl.err=null; renderExpl(); return; } if(sub){sub=null;} else {pi=0;} render();};
 $id("last").onclick=()=>{ if(expl) return; if(sub){sub.i=sub.plies.length-1;} else {pi=VARS[vi].plies.length-1;} render();};
 $id("flip").onclick=()=>{board.flip(); if(expl){renderExpl();} else {render();setTimeout(paintHL,30);} };
 
@@ -664,10 +758,14 @@ document.addEventListener("keydown",e=>{
   else if(e.key==="Home"){pi=0;render();e.preventDefault();}
   else if(e.key==="End"){pi=VARS[vi].plies.length-1;render();e.preventDefault();}
   else if(e.key==="c"||e.key==="C"||e.key==="с"||e.key==="С"){nextNote(e.shiftKey?-1:1);e.preventDefault();}
+  else if(e.key>="1" && e.key<="9"){
+    const i=+e.key-1;
+    if(i<BOOKS.length && i!==bi){ setBook(i); e.preventDefault(); }
+  }
 });
 
 if(window.innerWidth>=860) $id("sheet").open = true;
-render();
+paintBook(); buildOpts(); render();
 </script>
 </body>
 </html>
