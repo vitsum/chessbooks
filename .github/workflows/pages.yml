@@ -41,11 +41,9 @@ jobs:
           test -s dist/index.html
           test -s dist/chess-defences.html
 
-      # enablement: сам включает Pages с источником «GitHub Actions»,
-      # чтобы не переключать это руками в Settings
+      # Pages должен быть включён в Settings -> Pages с источником «GitHub Actions»:
+      # включить его отсюда встроенному токену не хватает прав
       - uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:
