@@ -38,6 +38,36 @@ python3 run.py build all      # три отдельных файла + объе�
 
 `STOCKFISH=/path/to/stockfish` — если бинарник лежит в другом месте.
 
+## Публикация на GitHub Pages
+
+`dist/` в репозитории нет — его собирает GitHub Actions. Обновление сайта = `git push`:
+push в `main` запускает [.github/workflows/pages.yml](.github/workflows/pages.yml),
+тот делает `python run.py build all` и публикует `dist/`. Сборке не нужны ни Stockfish,
+ни python-chess — только стандартная библиотека, данные книг уже лежат в `data/`.
+
+Пересобрать без коммита: вкладка **Actions → Публикация на GitHub Pages → Run workflow**.
+
+Настройка один раз:
+
+```bash
+git remote add origin https://github.com/<аккаунт>/chessbooks.git
+git push -u origin main
+```
+
+Затем в репозитории: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+Первый деплой поднимется через пару минут по адресу `https://<аккаунт>.github.io/chessbooks/`.
+Ссылку на репозиторий в подвале витрины задаёт `REPO_URL` в [src/books.py](src/books.py).
+
+Что оказывается на сайте:
+
+```
+index.html                витрина: описание и ссылки на приложения
+chess-defences.html       все три защиты в одном файле
+alekhine-parts1-2.html    по одной книге
+pirc-moskalenko.html
+kid-gufeld.html
+```
+
 ## Структура
 
 ```
@@ -53,10 +83,12 @@ src/
                        запись data_<book>.json
   scan.py              распознавание последовательностей ходов внутри текста комментариев
   template.html        шаблон приложения (плейсхолдеры __TITLE__, __BOOKS__, __JQUERY__ и т.д.)
+  index.html           шаблон витрины сайта (__CARDS__, __TITLE__, __REPO__)
 data/                  data_<book>.json — готовые варианты; cp_<book>.json — оценки движка
 vendor/                jquery, chess.js, chessboard.js, 12 SVG-фигур Cburnett
-dist/                  готовые приложения
+dist/                  готовые приложения (в гит не идут, собираются заново)
 docs/                  заметки
+.github/workflows/     сборка и публикация на GitHub Pages
 ```
 
 Шаблон один на все сборки: в `__BOOKS__` уезжает список книг

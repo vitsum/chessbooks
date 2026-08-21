@@ -19,7 +19,7 @@ import sys, os, json, base64, time
 ROOT = os.path.dirname(os.path.abspath(__file__))
 SRC, DATA, DIST, VEND = (os.path.join(ROOT, d) for d in ("src", "data", "dist", "vendor"))
 sys.path.insert(0, SRC)
-from books import BOOKS, META_KEYS, ONE_OUT, ONE_TITLE
+from books import BOOKS, META_KEYS, ONE_OUT, ONE_TITLE, SITE_TITLE, REPO_URL
 
 STOCKFISH = os.environ.get("STOCKFISH", "/usr/games/stockfish")
 data_path = lambda b: os.path.join(DATA, f"data_{b}.json")
@@ -102,6 +102,43 @@ def _write(ids, out, title):
           f"ходов {nm}, комментариев {nn}")
 
 
+def _stats(ids):
+    """(вариантов, ходов, комментариев) по перечисленным книгам."""
+    V = [json.load(open(data_path(b), encoding="utf-8")) for b in ids]
+    return (sum(len(x) for x in V),
+            sum(len(v["moves"]) for x in V for v in x),
+            sum(len(v["notes"]) for x in V for v in x))
+
+
+def _index():
+    """dist/index.html — витрина со ссылками на все собранные приложения."""
+    html = read(os.path.join(SRC, "index.html"))
+    nv, nm, nn = _stats(list(BOOKS))
+    parts = [f'<a class="main" href="{ONE_OUT}">'
+             f'<span class="k">главное приложение</span>'
+             f'<span class="t">Все три защиты в одном файле</span>'
+             f'<span class="d">Вкладки книг сверху; проводник и тренажёр работают '
+             f'сразу по всем книгам.</span>'
+             f'<span class="n">{nv} вариантов · {nm} ходов · {nn} комментариев</span></a>',
+             '<h2>По одной книге</h2>', '<div class="cards">']
+    for b, meta in BOOKS.items():
+        v1, m1, n1 = _stats([b])
+        parts.append(f'<a class="card" href="{meta["out"]}">'
+                     f'<span class="t">{meta["h1"]}</span>'
+                     f'<span class="a">{meta["eyebrow"]}</span>'
+                     f'<span class="n">{v1} вариантов · {m1} ходов · {n1} комм.</span></a>')
+    parts.append("</div>")
+
+    for token, val in [("__CARDS__", "\n".join(parts)),
+                       ("__TITLE__", SITE_TITLE), ("__REPO__", REPO_URL)]:
+        assert token in html, token
+        html = html.replace(token, val)
+
+    os.makedirs(DIST, exist_ok=True)
+    open(os.path.join(DIST, "index.html"), "w", encoding="utf-8", newline="\n").write(html)
+    print(f"index.html: {round(len(html)/1024)} KB, витрина: общий файл + {len(BOOKS)} книги")
+
+
 def build(target="one"):
     """target: 'one' — всё в одном файле, 'all' — и по книгам, и вместе, иначе id книги."""
     if target in ("one", "all"):
@@ -109,6 +146,7 @@ def build(target="one"):
             for b in BOOKS:
                 _write([b], BOOKS[b]["out"], BOOKS[b]["title"])
         _write(list(BOOKS), ONE_OUT, ONE_TITLE)
+        _index()
     else:
         if target not in BOOKS:
             sys.exit(f"неизвестная книга: {target}; есть {', '.join(BOOKS)}")

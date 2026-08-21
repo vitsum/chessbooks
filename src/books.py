@@ -4,6 +4,10 @@
 ONE_OUT   = "chess-defences.html"
 ONE_TITLE = "Защиты за чёрных — Алехин · Пирц · Староиндийская"
 
+# Витрина dist/index.html — то, что открывается на сайте первым.
+SITE_TITLE = "Защиты за чёрных — три книги в интерактивных приложениях"
+REPO_URL   = "https://github.com/vitsum/chessbooks"   # поправь под свой аккаунт
+
 BOOKS = {
     "alekhine": dict(
         out="alekhine-parts1-2.html",

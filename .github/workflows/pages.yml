@@ -1,0 +1,58 @@
+# Сборка приложений и публикация на GitHub Pages.
+# Запускается на каждый push в main, плюс кнопкой «Run workflow» на вкладке Actions.
+# Сторонних библиотек не нужно: run.py build использует только стандартную библиотеку,
+# а данные книг и оценки Stockfish уже лежат в data/.
+name: Публикация на GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'README.md'
+      - 'docs/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# новый деплой отменяет предыдущий, если тот ещё идёт
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Собрать приложения
+        run: python run.py build all
+
+      - name: Проверить, что собралось
+        run: |
+          ls -la dist
+          test -s dist/index.html
+          test -s dist/chess-defences.html
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

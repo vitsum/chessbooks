@@ -12,3 +12,7 @@ __pycache__/
 scans/
 *.jpg
 *.png
+
+# собранные приложения: их строит GitHub Actions при публикации,
+# локально — `python run.py build all`
+dist/
