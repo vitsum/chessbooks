@@ -105,6 +105,10 @@ h1{font-family:var(--disp);font-weight:600;font-size:clamp(22px,6vw,40px);line-h
 .opt .row1{display:flex;align-items:baseline;gap:10px}
 .opt .t{font-family:var(--disp);font-size:16px;text-transform:uppercase;letter-spacing:.03em;flex:1}
 .opt .e{font-family:var(--mono);font-size:12px;color:var(--gold);white-space:nowrap}
+.opt .sbdg{font-family:var(--mono);font-size:12px;white-space:nowrap;color:var(--mut)}
+.opt .sbdg.ok{color:#7FBF8E}
+.opt .sbdg.bad{color:var(--brick)}
+.opt .sbdg.mid{color:var(--gold)}
 .opt .e.bad{color:var(--brick)}
 .opt .mv{font-family:var(--mono);font-size:11.5px;color:var(--mut);margin-top:3px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -143,6 +147,55 @@ h1{font-family:var(--disp);font-weight:600;font-size:clamp(22px,6vw,40px);line-h
 .exitsub{width:100%;margin-top:8px;background:none;border:1px solid #7FC6A8;color:#7FC6A8;
   padding:10px;border-radius:2px;cursor:pointer;font-family:var(--mono);font-size:12px}
 .exitsub:hover{background:rgba(127,198,168,.12)}
+
+/* ---------- тренажёр ---------- */
+.modes{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.modes .explbtn{flex:1 1 250px;width:auto;margin-top:0}
+.trsum{font-family:var(--mono);font-size:11px;letter-spacing:.05em;color:var(--mut);
+  padding:13px 16px 0;line-height:1.7}
+.trsum b{color:var(--gold);font-weight:400}
+.trbar{display:flex;flex-wrap:wrap;gap:6px;padding:10px 16px 12px;border-bottom:1px solid var(--rule)}
+.trbar button{background:var(--panel);border:1px solid var(--rule);color:var(--tx);
+  font-family:var(--body);font-size:12.5px;padding:7px 10px;border-radius:2px;cursor:pointer}
+.trbar button:hover{border-color:var(--gold);color:var(--gold)}
+.trbar button.danger:hover{border-color:var(--brick);color:var(--brick)}
+.trgrp{display:flex;align-items:center;gap:10px;padding:15px 16px 7px;
+  border-bottom:1px solid var(--rule)}
+.trgrp span{flex:1;min-width:0;font-family:var(--mono);font-size:10.5px;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--gold);opacity:.85}
+.trgrp button{background:none;border:1px solid var(--rule);color:var(--mut);
+  font-family:var(--mono);font-size:10px;padding:4px 8px;border-radius:2px;cursor:pointer;
+  white-space:nowrap}
+.trgrp button:hover{border-color:var(--gold);color:var(--gold)}
+.tropt{display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:none;
+  border:none;border-bottom:1px solid rgba(38,69,74,.6);padding:11px 16px;cursor:pointer;color:var(--tx)}
+.tropt:hover{background:var(--panel)}
+.tropt[aria-pressed="false"]{opacity:.4}
+.tropt .chk{flex:0 0 16px;font-family:var(--mono);font-size:13px;color:var(--gold)}
+.tropt[aria-pressed="false"] .chk{color:var(--mut)}
+.tropt .cap{flex:1;min-width:0}
+.tropt .t{display:block;font-family:var(--disp);font-size:15px;text-transform:uppercase;
+  letter-spacing:.03em;line-height:1.2}
+.tropt .mv{display:block;font-family:var(--mono);font-size:11px;color:var(--mut);margin-top:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bdg{flex:0 0 auto;font-family:var(--mono);font-size:11px;color:var(--mut);white-space:nowrap}
+.bdg.ok{color:#7FBF8E}
+.bdg.bad{color:var(--brick)}
+.bdg.mid{color:var(--gold)}
+.trgo{position:sticky;bottom:0;background:var(--ink);border-top:1px solid var(--rule);
+  padding:12px 16px;padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+.trgo button{width:100%;background:var(--gold);border:none;color:var(--ink);font-family:var(--disp);
+  font-size:15px;text-transform:uppercase;letter-spacing:.06em;padding:13px;border-radius:2px;
+  cursor:pointer}
+.trgo button:disabled{background:var(--panel);color:var(--mut);cursor:default}
+.note.ok{border-left-color:#7FBF8E;background:#15302C}
+.note.err{border-left-color:var(--brick);background:#2A1A18}
+.note .trline{font-family:var(--mono);font-size:13.5px;line-height:1.95;margin-top:7px;color:var(--mut)}
+.note .trline b{color:var(--tx);font-weight:400}
+.note .trline i{color:var(--gold);font-style:normal}
+.subs button.go{background:var(--gold);color:var(--ink);border-color:var(--gold);
+  font-family:var(--disp);text-transform:uppercase;letter-spacing:.05em}
+.subs button.go:hover{background:#F2BB53}
 
 /* ---------- доска ---------- */
 #board{flex:1;min-width:0}
@@ -266,13 +319,31 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
   </button>
   <button class="varnav" id="nextvar" title="Следующий вариант" aria-label="Следующий вариант">▶</button>
 </div>
-<button class="explbtn" id="explbtn">⚑ Проводник — двигать фигуры и искать позицию в книге</button>
+<div class="modes">
+  <button class="explbtn" id="explbtn">⚑ Проводник — двигать фигуры и искать позицию в книге</button>
+  <button class="explbtn" id="trainbtn">🎓 Тренажёр — разыграть варианты за чёрных</button>
+</div>
 <div class="varpos" id="varpos"></div>
 
 <div class="sheetbg" id="modal" role="dialog" aria-modal="true" aria-label="Выбор варианта">
   <div class="picklist" id="picklist">
     <div class="top"><b>Выберите вариант</b><button id="close" aria-label="Закрыть">×</button></div>
     <div id="opts"></div>
+  </div>
+</div>
+
+<div class="sheetbg" id="trmodal" role="dialog" aria-modal="true" aria-label="Настройка тренировки">
+  <div class="picklist" id="trlist">
+    <div class="top"><b>Что тренируем</b><button id="trclose" aria-label="Закрыть">×</button></div>
+    <div class="trsum" id="trsum"></div>
+    <div class="trbar">
+      <button id="trall">включить все</button>
+      <button id="trnone">выключить все</button>
+      <button id="trweak">только невыученные</button>
+      <button id="trreset" class="danger">сбросить статистику книги</button>
+    </div>
+    <div id="tropts"></div>
+    <div class="trgo"><button id="trstart">Начать тренировку</button></div>
   </div>
 </div>
 
@@ -297,7 +368,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
       <button id="last" title="В конец" aria-label="В конец">⏭</button>
       <button id="flip" class="flip" title="Развернуть доску" aria-label="Развернуть доску">⇅</button>
     </div>
-    <div class="hint">свайп по доске — листать ходы</div>
+    <div class="hint" id="hint">свайп по доске — листать ходы</div>
     <div class="note" id="note"></div>
     <div class="subs" id="subs"></div>
     <button class="missed" id="missed"></button>
@@ -311,7 +382,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
 
 <footer>
   <kbd>←</kbd> <kbd>→</kbd> — ходы, <kbd>↑</kbd> <kbd>↓</kbd> — варианты, <kbd>C</kbd> — к следующему комментарию, <kbd>Home</kbd> / <kbd>End</kbd> — в начало и в конец. Градусник — Stockfish 16, глубина 16, посчитано заранее; символ в строке ниже доски — оценка из книги.
-  <span id="bookkeys"><kbd>1</kbd>…<kbd>9</kbd> — переключить книгу. </span>Доска: chessboard.js + chess.js, фигуры Cburnett.
+  <span id="bookkeys"><kbd>1</kbd>…<kbd>9</kbd> — переключить книгу, </span><kbd>T</kbd> — тренажёр. Доска: chessboard.js + chess.js, фигуры Cburnett.
   <span id="credit"></span>
 </footer>
 
@@ -2235,7 +2306,7 @@ exports.Chess = Chess;
 </script>
 <script>
 const PIECES = {"bB": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0NSA0NSI+PGcgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIiBzdHJva2U9IiMwMDAiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSIxLjUiPjxnIGZpbGw9IiMwMDAiIHN0cm9rZS1saW5lY2FwPSJidXR0Ij48cGF0aCBkPSJNOSAzNmMzLjQtMSAxMC4xLjQgMTMuNS0yIDMuNCAyLjQgMTAuMSAxIDEzLjUgMiAwIDAgMS42LjUgMyAyLS43IDEtMS42IDEtMyAuNS0zLjQtMS0xMC4xLjUtMTMuNS0xLTMuNCAxLjUtMTAuMSAwLTEzLjUgMS0xLjQuNS0yLjMuNS0zLS41IDEuNC0yIDMtMiAzLTJ6Ii8+PHBhdGggZD0iTTE1IDMyYzIuNSAyLjUgMTIuNSAyLjUgMTUgMCAuNS0xLjUgMC0yIDAtMiAwLTIuNS0yLjUtNC0yLjUtNCA1LjUtMS41IDYtMTEuNS01LTE1LjUtMTEgNC0xMC41IDE0LTUgMTUuNSAwIDAtMi41IDEuNS0yLjUgNCAwIDAtLjUuNSAwIDJ6Ii8+PHBhdGggZD0iTTI1IDhhMi41IDIuNSAwIDEgMS01IDAgMi41IDIuNSAwIDEgMSA1IDB6Ii8+PC9nPjxwYXRoIHN0cm9rZT0iI2VjZWNlYyIgc3Ryb2tlLWxpbmVqb2luPSJtaXRlciIgZD0iTTE3LjUgMjZoMTBNMTUgMzBoMTVtLTcuNS0xNC41djVNMjAgMThoNSIvPjwvZz48L3N2Zz4=", "bK": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0NSA0NSI+PGcgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIiBzdHJva2U9IiMwMDAiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSIxLjUiPjxwYXRoIHN0cm9rZS1saW5lam9pbj0ibWl0ZXIiIGQ9Ik0yMi41IDExLjZWNiIvPjxwYXRoIGZpbGw9IiMwMDAiIHN0cm9rZS1saW5lY2FwPSJidXR0IiBzdHJva2UtbGluZWpvaW49Im1pdGVyIiBkPSJNMjIuNSAyNXM0LjUtNy41IDMtMTAuNWMwIDAtMS0yLjUtMy0yLjVzLTMgMi41LTMgMi41Yy0xLjUgMyAzIDEwLjUgMyAxMC41Ii8+PHBhdGggZmlsbD0iIzAwMCIgZD0iTTExLjUgMzdhMjIuMyAyMi4zIDAgMCAwIDIxIDB2LTdzOS00LjUgNi0xMC41Yy00LTYuNS0xMy41LTMuNS0xNiA0VjI3di0zLjVjLTMuNS03LjUtMTMtMTAuNS0xNi00LTMgNiA1IDEwIDUgMTB6Ii8+PHBhdGggc3Ryb2tlLWxpbmVqb2luPSJtaXRlciIgZD0iTTIwIDhoNSIvPjxwYXRoIHN0cm9rZT0iI2VjZWNlYyIgZD0iTTMyIDI5LjVzOC41LTQgNi05LjdDMzQuMSAxNCAyNSAxOCAyMi41IDI0LjZ2Mi4xLTIuMUMyMCAxOCA5LjkgMTQgNyAxOS45Yy0yLjUgNS42IDQuOCA5IDQuOCA5Ii8+PHBhdGggc3Ryb2tlPSIjZWNlY2VjIiBkPSJNMTEuNSAzMGM1LjUtMyAxNS41LTMgMjEgMG0tMjEgMy41YzUuNS0zIDE1LjUtMyAyMSAwbS0yMSAzLjVjNS41LTMgMTUuNS0zIDIxIDAiLz48L2c+PC9zdmc+", "bN": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0NSA0NSI+PGcgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIiBzdHJva2U9IiMwMDAiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSIxLjUiPjxwYXRoIGZpbGw9IiMwMDAiIGQ9Ik0yMiAxMGMxMC41IDEgMTYuNSA4IDE2IDI5SDE1YzAtOSAxMC02LjUgOC0yMSIvPjxwYXRoIGZpbGw9IiMwMDAiIGQ9Ik0yNCAxOGMuMzggMi45MS01LjU1IDcuMzctOCA5LTMgMi0yLjgyIDQuMzQtNSA0LTEuMDQtLjk0IDEuNDEtMy4wNCAwLTMtMSAwIC4xOSAxLjIzLTEgMi0xIDAtNCAxLTQtNCAwLTIgNi0xMiA2LTEyczEuODktMS45IDItMy41Yy0uNzMtMS0uNS0yLS41LTMgMS0xIDMgMi41IDMgMi41aDJzLjc4LTIgMi41LTNjMSAwIDEgMyAxIDMiLz48cGF0aCBmaWxsPSIjZWNlY2VjIiBzdHJva2U9IiNlY2VjZWMiIGQ9Ik05LjUgMjUuNWEuNS41IDAgMSAxLTEgMCAuNS41IDAgMSAxIDEgMG01LjQzLTkuNzVhLjUgMS41IDMwIDEgMS0uODYtLjUuNSAxLjUgMzAgMSAxIC44Ni41Ii8+PHBhdGggZmlsbD0iI2VjZWNlYyIgc3Ryb2tlPSJub25lIiBkPSJtMjQuNTUgMTAuNC0uNDUgMS40NS41LjE1YzMuMTUgMSA1LjY1IDIuNDkgNy45IDYuNzVTMzUuNzUgMjkuMDYgMzUuMjUgMzlsLS4wNS41aDIuMjVsLjA1LS41Yy41LTEwLjA2LS44OC0xNi44NS0zLjI1LTIxLjM0cy01Ljc5LTYuNjQtOS4xOS03LjE2eiIvPjwvZz48L3N2Zz4=", "bP": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0NSA0NSI+PHBhdGggc3Ryb2tlPSIjMDAwIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS13aWR0aD0iMS41IiBkPSJNMjIuNSA5YTQgNCAwIDAgMC0zLjIyIDYuMzggNi40OCA2LjQ4IDAgMCAwLS44NyAxMC42NWMtMyAxLjA2LTcuNDEgNS41NS03LjQxIDEzLjQ3aDIzYzAtNy45Mi00LjQxLTEyLjQxLTcuNDEtMTMuNDdhNi40NiA2LjQ2IDAgMCAwLS44Ny0xMC42NUE0LjAxIDQuMDEgMCAwIDAgMjIuNSA5eiIvPjwvc3ZnPg==", "bQ": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0NSA0NSI+PGcgZmlsbC1ydWxlPSJldmVub2RkIiBzdHJva2U9IiMwMDAiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSIxLjUiPjxnIHN0cm9rZT0ibm9uZSI+PGNpcmNsZSBjeD0iNiIgY3k9IjEyIiByPSIyLjc1Ii8+PGNpcmNsZSBjeD0iMTQiIGN5PSI5IiByPSIyLjc1Ii8+PGNpcmNsZSBjeD0iMjIuNSIgY3k9IjgiIHI9IjIuNzUiLz48Y2lyY2xlIGN4PSIzMSIgY3k9IjkiIHI9IjIuNzUiLz48Y2lyY2xlIGN4PSIzOSIgY3k9IjEyIiByPSIyLjc1Ii8+PC9nPjxwYXRoIHN0cm9rZS1saW5lY2FwPSJidXR0IiBkPSJNOSAyNmM4LjUtMS41IDIxLTEuNSAyNyAwbDIuNS0xMi41TDMxIDI1bC0uMy0xNC4xLTUuMiAxMy42LTMtMTQuNS0zIDE0LjUtNS4yLTEzLjZMMTQgMjUgNi41IDEzLjV6Ii8+PHBhdGggc3Ryb2tlLWxpbmVjYXA9ImJ1dHQiIGQ9Ik05IDI2YzAgMiAxLjUgMiAyLjUgNCAxIDEuNSAxIDEgLjUgMy41LTEuNSAxLTEuNSAyLjUtMS41IDIuNS0xLjUgMS41LjUgMi41LjUgMi41IDYuNSAxIDE2LjUgMSAyMyAwIDAgMCAxLjUtMSAwLTIuNSAwIDAgLjUtMS41LTEtMi41LS41LTIuNS0uNS0yIC41LTMuNSAxLTIgMi41LTIgMi41LTQtOC41LTEuNS0xOC41LTEuNS0yNyAweiIvPjxwYXRoIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJidXR0IiBkPSJNMTEgMzguNWEzNSAzNSAxIDAgMCAyMyAwIi8+PHBhdGggZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZWNlY2VjIiBkPSJNMTEgMjlhMzUgMzUgMSAwIDEgMjMgMG0tMjEuNSAyLjVoMjBtLTIxIDNhMzUgMzUgMSAwIDAgMjIgMG0tMjMgM2EzNSAzNSAxIDAgMCAyNCAwIi8+PC9nPjwvc3ZnPg==", "bR": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0NSA0NSI+PGcgZmlsbC1ydWxlPSJldmVub2RkIiBzdHJva2U9IiMwMDAiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSIxLjUiPjxwYXRoIHN0cm9rZS1saW5lY2FwPSJidXR0IiBkPSJNOSAzOWgyN3YtM0g5em0zLjUtNyAxLjUtMi41aDE3bDEuNSAyLjV6bS0uNSA0di00aDIxdjR6Ii8+PHBhdGggc3Ryb2tlLWxpbmVjYXA9ImJ1dHQiIHN0cm9rZS1saW5lam9pbj0ibWl0ZXIiIGQ9Ik0xNCAyOS41di0xM2gxN3YxM3oiLz48cGF0aCBzdHJva2UtbGluZWNhcD0iYnV0dCIgZD0iTTE0IDE2LjUgMTEgMTRoMjNsLTMgMi41ek0xMSAxNFY5aDR2Mmg1VjloNXYyaDVWOWg0djV6Ii8+PHBhdGggZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZWNlY2VjIiBzdHJva2UtbGluZWpvaW49Im1pdGVyIiBzdHJva2Utd2lkdGg9IjEiIGQ9Ik0xMiAzNS41aDIxbS0yMC00aDE5bS0xOC0yaDE3bS0xNy0xM2gxN00xMSAxNGgyMyIvPjwvZz48L3N2Zz4=", "wB": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0NSA0NSI+PGcgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIiBzdHJva2U9IiMwMDAiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSIxLjUiPjxnIGZpbGw9IiNmZmYiIHN0cm9rZS1saW5lY2FwPSJidXR0Ij48cGF0aCBkPSJNOSAzNmMzLjM5LS45NyAxMC4xMS40MyAxMy41LTIgMy4zOSAyLjQzIDEwLjExIDEuMDMgMTMuNSAyIDAgMCAxLjY1LjU0IDMgMi0uNjguOTctMS42NS45OS0zIC41LTMuMzktLjk3LTEwLjExLjQ2LTEzLjUtMS0zLjM5IDEuNDYtMTAuMTEuMDMtMTMuNSAxLTEuMzUuNDktMi4zMi40Ny0zLS41IDEuMzUtMS45NCAzLTIgMy0yeiIvPjxwYXRoIGQ9Ik0xNSAzMmMyLjUgMi41IDEyLjUgMi41IDE1IDAgLjUtMS41IDAtMiAwLTIgMC0yLjUtMi41LTQtMi41LTQgNS41LTEuNSA2LTExLjUtNS0xNS41LTExIDQtMTAuNSAxNC01IDE1LjUgMCAwLTIuNSAxLjUtMi41IDQgMCAwLS41LjUgMCAyeiIvPjxwYXRoIGQ9Ik0yNSA4YTIuNSAyLjUgMCAxIDEtNSAwIDIuNSAyLjUgMCAxIDEgNSAweiIvPjwvZz48cGF0aCBzdHJva2UtbGluZWpvaW49Im1pdGVyIiBkPSJNMTcuNSAyNmgxME0xNSAzMGgxNW0tNy41LTE0LjV2NU0yMCAxOGg1Ii8+PC9nPjwvc3ZnPg==", "wK": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0NSA0NSI+PGcgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIiBzdHJva2U9IiMwMDAiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSIxLjUiPjxwYXRoIHN0cm9rZS1saW5lam9pbj0ibWl0ZXIiIGQ9Ik0yMi41IDExLjYzVjZNMjAgOGg1Ii8+PHBhdGggZmlsbD0iI2ZmZiIgc3Ryb2tlLWxpbmVjYXA9ImJ1dHQiIHN0cm9rZS1saW5lam9pbj0ibWl0ZXIiIGQ9Ik0yMi41IDI1czQuNS03LjUgMy0xMC41YzAgMC0xLTIuNS0zLTIuNXMtMyAyLjUtMyAyLjVjLTEuNSAzIDMgMTAuNSAzIDEwLjUiLz48cGF0aCBmaWxsPSIjZmZmIiBkPSJNMTEuNSAzN2M1LjUgMy41IDE1LjUgMy41IDIxIDB2LTdzOS00LjUgNi0xMC41Yy00LTYuNS0xMy41LTMuNS0xNiA0VjI3di0zLjVjLTMuNS03LjUtMTMtMTAuNS0xNi00LTMgNiA1IDEwIDUgMTB6Ii8+PHBhdGggZD0iTTExLjUgMzBjNS41LTMgMTUuNS0zIDIxIDBtLTIxIDMuNWM1LjUtMyAxNS41LTMgMjEgMG0tMjEgMy41YzUuNS0zIDE1LjUtMyAyMSAwIi8+PC9nPjwvc3ZnPg==", "wN": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0NSA0NSI+PGcgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIiBzdHJva2U9IiMwMDAiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSIxLjUiPjxwYXRoIGZpbGw9IiNmZmYiIGQ9Ik0yMiAxMGMxMC41IDEgMTYuNSA4IDE2IDI5SDE1YzAtOSAxMC02LjUgOC0yMSIvPjxwYXRoIGZpbGw9IiNmZmYiIGQ9Ik0yNCAxOGMuMzggMi45MS01LjU1IDcuMzctOCA5LTMgMi0yLjgyIDQuMzQtNSA0LTEuMDQyLS45NCAxLjQxLTMuMDQgMC0zLTEgMCAuMTkgMS4yMy0xIDItMSAwLTQuMDAzIDEtNC00IDAtMiA2LTEyIDYtMTJzMS44OS0xLjkgMi0zLjVjLS43My0uOTk0LS41LTItLjUtMyAxLTEgMyAyLjUgMyAyLjVoMnMuNzgtMS45OTIgMi41LTNjMSAwIDEgMyAxIDMiLz48cGF0aCBmaWxsPSIjMDAwIiBkPSJNOS41IDI1LjVhLjUuNSAwIDEgMS0xIDAgLjUuNSAwIDEgMSAxIDBtNS40MzMtOS43NWEuNSAxLjUgMzAgMSAxLS44NjYtLjUuNSAxLjUgMzAgMSAxIC44NjYuNSIvPjwvZz48L3N2Zz4=", "wP": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0NSA0NSI+PHBhdGggZmlsbD0iI2ZmZiIgc3Ryb2tlPSIjMDAwIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS13aWR0aD0iMS41IiBkPSJNMjIuNSA5Yy0yLjIxIDAtNCAxLjc5LTQgNCAwIC44OS4yOSAxLjcxLjc4IDIuMzhDMTcuMzMgMTYuNSAxNiAxOC41OSAxNiAyMWMwIDIuMDMuOTQgMy44NCAyLjQxIDUuMDMtMyAxLjA2LTcuNDEgNS41NS03LjQxIDEzLjQ3aDIzYzAtNy45Mi00LjQxLTEyLjQxLTcuNDEtMTMuNDcgMS40Ny0xLjE5IDIuNDEtMyAyLjQxLTUuMDMgMC0yLjQxLTEuMzMtNC41LTMuMjgtNS42Mi40OS0uNjcuNzgtMS40OS43OC0yLjM4IDAtMi4yMS0xLjc5LTQtNC00eiIvPjwvc3ZnPg==", "wQ": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0NSA0NSI+PGcgZmlsbD0iI2ZmZiIgZmlsbC1ydWxlPSJldmVub2RkIiBzdHJva2U9IiMwMDAiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSIxLjUiPjxwYXRoIGQ9Ik04IDEyYTIgMiAwIDEgMS00IDAgMiAyIDAgMSAxIDQgMG0xNi41LTQuNWEyIDIgMCAxIDEtNCAwIDIgMiAwIDEgMSA0IDBNNDEgMTJhMiAyIDAgMSAxLTQgMCAyIDIgMCAxIDEgNCAwTTE2IDguNWEyIDIgMCAxIDEtNCAwIDIgMiAwIDEgMSA0IDBNMzMgOWEyIDIgMCAxIDEtNCAwIDIgMiAwIDEgMSA0IDAiLz48cGF0aCBzdHJva2UtbGluZWNhcD0iYnV0dCIgZD0iTTkgMjZjOC41LTEuNSAyMS0xLjUgMjcgMGwyLTEyLTcgMTFWMTFsLTUuNSAxMy41LTMtMTUtMyAxNS01LjUtMTRWMjVMNyAxNHoiLz48cGF0aCBzdHJva2UtbGluZWNhcD0iYnV0dCIgZD0iTTkgMjZjMCAyIDEuNSAyIDIuNSA0IDEgMS41IDEgMSAuNSAzLjUtMS41IDEtMS41IDIuNS0xLjUgMi41LTEuNSAxLjUuNSAyLjUuNSAyLjUgNi41IDEgMTYuNSAxIDIzIDAgMCAwIDEuNS0xIDAtMi41IDAgMCAuNS0xLjUtMS0yLjUtLjUtMi41LS41LTIgLjUtMy41IDEtMiAyLjUtMiAyLjUtNC04LjUtMS41LTE4LjUtMS41LTI3IDB6Ii8+PHBhdGggZmlsbD0ibm9uZSIgZD0iTTExLjUgMzBjMy41LTEgMTguNS0xIDIyIDBNMTIgMzMuNWM2LTEgMTUtMSAyMSAwIi8+PC9nPjwvc3ZnPg==", "wR": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0NSA0NSI+PGcgZmlsbD0iI2ZmZiIgZmlsbC1ydWxlPSJldmVub2RkIiBzdHJva2U9IiMwMDAiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSIxLjUiPjxwYXRoIHN0cm9rZS1saW5lY2FwPSJidXR0IiBkPSJNOSAzOWgyN3YtM0g5em0zLTN2LTRoMjF2NHptLTEtMjJWOWg0djJoNVY5aDV2Mmg1VjloNHY1Ii8+PHBhdGggZD0ibTM0IDE0LTMgM0gxNGwtMy0zIi8+PHBhdGggc3Ryb2tlLWxpbmVjYXA9ImJ1dHQiIHN0cm9rZS1saW5lam9pbj0ibWl0ZXIiIGQ9Ik0zMSAxN3YxMi41SDE0VjE3Ii8+PHBhdGggZD0ibTMxIDI5LjUgMS41IDIuNWgtMjBsMS41LTIuNSIvPjxwYXRoIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lam9pbj0ibWl0ZXIiIGQ9Ik0xMSAxNGgyMyIvPjwvZz48L3N2Zz4="};
-const BOOKS  = [{"id": "kid", "short": "Староиндийская", "h1": "Староиндийская", "eyebrow": "Эдуард Гуфельд, Олег Стецко · 2-е издание · 2017", "sub": "«Искусство староиндийской защиты». Репертуар за чёрных — доска развёрнута с их стороны.", "credit": "Комментарии — пересказ разбора Гуфельда и Стецко своими словами.", "vars": [{"id": "z_nc6", "chapter": "Система Земиша · 5.f3", "title": "Главный вариант Гуфельда: 6…Nc6!", "tag": "÷", "eval": "÷ контригра на ферзевом фланге", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "f3", "O-O", "Be3", "Nc6", "Nge2", "Rb8", "Qd2", "a6"], "notes": {"9": "Система Земиша — «шахматный Корбюзье»: Земиш выстраивал мощную пешечную армаду в центре c3, c4, d4, e4. «Столь же односторонним представляется мне и построение в стиле Земиша на шахматной доске» (Гуфельд).", "10": "Рокировку до хода d7-d6 Гуфельд применял всю свою «староиндийскую» жизнь: «невинная на первый взгляд перестановка ходов не столько сужает возможности белых, сколько расширяет выбор чёрных». В известной степени ранняя рокировка носит и провокационный характер — допуская 5.e5, чёрные вызывают огонь на себя.", "12": "«Наиболее гибким оружием против системы Земиша является план, связанный с ходом 6…Nc6» (Гуфельд). Амбициозный выход коня — своего рода провокация: в случае напрашивающегося <a class=\"inl\" data-s=\"0\">7.d5 Ne5</a> чёрные готовы вскрыть линии ходом e7-e6 или c7-c6.", "13": "Наиболее гибкая система развития. Белые максимально подкрепляют центр фигурами и, кроме плана с длинной рокировкой, могут перебросить этого коня на ферзевый фланг: Ne2-c1-b3.", "14": "Прежде чем начинать операции в центре (e7-e5), целесообразно ходом b7-b5 захватить пространство на ферзевом фланге — туда, куда стремится белый король. Порядок ходов, где первой стартует ладья, ввёл в практику Игорь Зайцев.", "16": "Подготовка контрудара b7-b5 завершена. Смысл всего плана: конь с c6 не только атакует пункт d4, но и поддерживает атаку пешки c4 после <a class=\"inl\" data-s=\"1\">a7-a6, b7-b5</a>. Открытие «второго фронта» вынудит белых отвлечь часть сил от операции на королевском фланге."}, "evals": {"16": "÷"}, "subs": {}, "isubs": {"0": {"kind": "line", "startFen": "r1bq1rk1/ppp1ppbp/2np1np1/8/2PPP3/2N1BP2/PP4PP/R2QKBNR w KQ - 3 7", "plies": [{"san": "d5", "fen": "r1bq1rk1/ppp1ppbp/2np1np1/3P4/2P1P3/2N1BP2/PP4PP/R2QKBNR b KQ - 0 7", "from": "d4", "to": "d5", "num": "7."}, {"san": "Ne5", "fen": "r1bq1rk1/ppp1ppbp/3p1np1/3Pn3/2P1P3/2N1BP2/PP4PP/R2QKBNR w KQ - 1 8", "from": "c6", "to": "e5", "num": "7…"}]}, "1": {"kind": "plan", "startFen": "1rbq1rk1/ppp1ppbp/2np1np1/8/2PPP3/2N1BP2/PP1QN1PP/R3KB1R b KQ - 6 8", "plies": [{"san": "a6", "fen": "1rbq1rk1/1pp1ppbp/p1np1np1/8/2PPP3/2N1BP2/PP1QN1PP/R3KB1R w KQ - 0 9", "from": "a7", "to": "a6", "num": "8…"}, {"san": "b5", "fen": "1rbq1rk1/2p1ppbp/p1np1np1/1p6/2PPP3/2N1BP2/PP1QN1PP/R3KB1R w KQ - 0 10", "from": "b7", "to": "b5", "num": "9…"}]}}, "cp": [24, 21, 25, 24, 45, 45, 55, 57, 53, 23, 36, 35, 62, 49, 57, 47, 46], "line": "… 4...d6 5.f3 5...O-O 6.Be3 6...Nc6 7.Nge2 7...Rb8 8.Qd2 …"}, {"id": "z_a4", "chapter": "Система Земиша · 5.f3", "title": "9.a4 — против b7-b5", "tag": "³", "eval": "³ контратака только усиливается", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "f3", "O-O", "Be3", "Nc6", "Nge2", "Rb8", "Qd2", "a6", "a4"], "notes": {"17": "Светозар Глигорич радикально препятствует продвижению b7-b5, признавая этим психологическое воздействие такой идеи контригры. Однако этот ход не отвечает духу варианта: белые слишком растягивают линию фронта, и контратака чёрных на ферзевом фланге только выигрывает в силе."}, "evals": {"17": "³"}, "subs": {}, "isubs": {}, "cp": [39, 20, 21, 19, 35, 47, 53, 53, 54, 34, 34, 42, 52, 51, 71, 74, 71, 28], "line": "… 4...d6 5.f3 5...O-O 6.Be3 6...Nc6 7.Nge2 7...Rb8 8.Qd2 …"}, {"id": "z_nc1", "chapter": "Система Земиша · 5.f3", "title": "9.Nc1 — главный вариант системы", "tag": "÷", "eval": "÷ рельсы главного варианта", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "f3", "O-O", "Be3", "Nc6", "Nge2", "Rb8", "Qd2", "a6", "Nc1", "e5", "d5", "Nd4", "Nb3", "c5", "dxc6", "bxc6"], "notes": {"17": "В те годы теория рекомендовала именно это — конь идёт по маршруту e2-c1-b3, переводя игру на рельсы главного варианта системы.", "18": "Только теперь чёрные начинают операции в центре.", "24": "Смысл раннего Rb8: чёрные заблаговременно готовятся к вскрытию линии «b» — ладья уже стоит напротив пешки b2."}, "evals": {"24": "÷"}, "subs": {}, "isubs": {}, "cp": [39, 19, 32, 42, 43, 49, 54, 54, 56, 35, 37, 47, 61, 64, 70, 67, 76, 50, 58, 51, 52, 60, 89, 87, 93], "line": "… 4...d6 5.f3 5...O-O 6.Be3 6...Nc6 7.Nge2 7...Rb8 8.Qd2 …"}, {"id": "z_bh6", "chapter": "Система Земиша · 5.f3", "title": "9.Bh6 — размен слона g7", "tag": "÷", "eval": "÷ у чёрных полноценная контригра", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "f3", "O-O", "Be3", "Nc6", "Nge2", "Rb8", "Qd2", "a6", "Bh6", "Bxh6", "Qxh6", "e5"], "notes": {"17": "Багиров смеётся: «Стоит разменять слона g7, и Гуфельд обезоружен!» В этой шутке немалая доля правды — но здесь потеря любимого слона огорчения не доставила: белые упускают драгоценное время.", "18": "«В дальнейшем я пришёл к выводу, что сильнее сразу контратаковать в центре после отвлечения ферзя» (Гуфельд). В бессмертной партии было сыграно 9…b5 — см. раздел «Партии целиком».", "20": "Атака белых на королевском фланге стратегически не обоснована и тактически запаздывает: чёрные успевают создать угрозы на другой стороне доски."}, "evals": {"20": "÷"}, "subs": {}, "isubs": {}, "cp": [44, 32, 35, 42, 36, 47, 54, 51, 55, 39, 38, 39, 60, 57, 66, 64, 73, 53, 62, 50, 59], "line": "… 4...d6 5.f3 5...O-O 6.Be3 6...Nc6 7.Nge2 7...Rb8 8.Qd2 …"}, {"id": "z_e5", "chapter": "Система Земиша · 5.f3", "title": "6…e5 7.Nge2", "tag": "÷", "eval": "÷ классическая трактовка", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "f3", "O-O", "Be3", "e5", "Nge2", "c6"], "notes": {"12": "Первое время, в период стремления к классическим методам игры, ортодоксальным ответом считалось именно это.", "13": "План развития без закрытия центра.", "14": "На это чёрные чаще всего и отвечали, имея в виду организацию подрыва d6-d5."}, "evals": {"14": "÷"}, "subs": {}, "isubs": {}, "cp": [47, 38, 39, 40, 53, 45, 61, 54, 63, 43, 44, 44, 88, 72, 87], "line": "… 4...d6 5.f3 5...O-O 6.Be3 6...e5 7.Nge2 7...c6"}, {"id": "z_d5", "chapter": "Система Земиша · 5.f3", "title": "6…e5 7.d5 — закрытый центр", "tag": "÷", "eval": "÷ игра на разных флангах", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "f3", "O-O", "Be3", "e5", "d5", "Nh5"], "notes": {"13": "Возникает закрытая пешечная структура, в которой белые под прикрытием клина c4-d5-e4 рокируют в длинную сторону — с видами на атаку королевского фланга надвижением пешек h и g.", "14": "Самый распространённый ответ: конь уходит с дороги, чтобы быстро провести f7-f5, что нивелирует планы белых на королевском фланге."}, "evals": {"14": "÷"}, "subs": {}, "isubs": {}, "cp": [39, 38, 43, 43, 50, 51, 64, 59, 62, 36, 40, 35, 83, 85, 77], "line": "… 4...d6 5.f3 5...O-O 6.Be3 6...e5 7.d5 7...Nh5"}, {"id": "z_b6", "chapter": "Система Земиша · 5.f3", "title": "6…b6 — фианкетто на b7", "tag": "÷", "eval": "÷ давление по большой диагонали", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "f3", "O-O", "Be3", "b6", "Qd2", "Bb7"], "notes": {"12": "Один из методов, связанных с подготовкой фланговой атаки центра посредством c7-c5 — наряду с 6…Nbd7. Играли также 6…c6 и 6…a6, подготавливая b7-b5. «Но, на мой взгляд, вершиной староиндийской мысли стал ход 6…Nc6» (Гуфельд).", "14": "Оба слона нацелены на центр белых, дальше возможны c7-c5 или e7-e5."}, "evals": {"14": "÷"}, "subs": {}, "isubs": {}, "cp": [50, 43, 42, 42, 52, 49, 65, 67, 66, 46, 41, 42, 59, 57, 114], "line": "… 4...d6 5.f3 5...O-O 6.Be3 6...b6 7.Qd2 7...Bb7"}, {"id": "z_bg5", "chapter": "Система Земиша · 5.f3", "title": "6.Bg5 Nc6", "tag": "÷", "eval": "÷ связка вместо Be3", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "f3", "O-O", "Bg5", "Nc6"], "notes": {"11": "Более поздняя добавка к системе: слон выходит активнее, но и сам становится объектом нападения.", "12": "Тот же план: давление на d4 и подготовка <a class=\"inl\" data-s=\"0\">a7-a6, b7-b5</a>."}, "evals": {"12": "÷"}, "subs": {}, "isubs": {"0": {"kind": "plan", "startFen": "r1bq1rk1/ppp1ppbp/2np1np1/6B1/2PPP3/2N2P2/PP4PP/R2QKBNR w KQ - 3 7", "plies": [{"san": "a6", "fen": "r1bq1rk1/1pp1ppbp/p1np1np1/6B1/2PPP3/2N2P2/PP4PP/R2QKBNR w KQ - 0 8", "from": "a7", "to": "a6", "num": "7…"}, {"san": "b5", "fen": "r1bq1rk1/2p1ppbp/p1np1np1/1p4B1/2PPP3/2N2P2/PP4PP/R2QKBNR w KQ - 0 9", "from": "b7", "to": "b5", "num": "8…"}]}}, "cp": [44, 42, 42, 45, 52, 52, 66, 66, 65, 44, 40, 39, 41], "line": "… 4...d6 5.f3 5...O-O 6.Bg5 6...Nc6"}, {"id": "early_e5", "chapter": "Система Земиша · 5.f3", "title": "Провокация: 4…0-0 5.e5?! (Летелье — Фишер)", "tag": "∓", "eval": "∓ от центра белых остались руины", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "O-O", "e5", "Ne8", "f4", "d6", "Be3", "c5", "dxc5", "Nc6", "cxd6", "exd6", "Ne4", "Bf5"], "notes": {"8": "Восклицательный знак — авторская оценка. Ранняя рокировка носит провокационный характер: чёрные допускают 5.e5 и вызывают огонь на себя.", "9": "«Скороспелая атака несёт в себе не только положительный фактор, но и отрицательный: такое сильнодействующее средство — палка о двух концах, один из которых, со стороны чёрных, может оказаться тяжелее» (Гуфельд).", "10": "На это и был расчёт: пешка e5 остаётся без опоры.", "14": "Подрыв основания цепи.", "20": "«И от центра белых остались одни руины при нарастающей инициативе чёрных» — партия Летелье — Фишер, Олимпиада в Лейпциге 1960."}, "evals": {"20": "∓"}, "subs": {}, "isubs": {}, "cp": [43, 44, 40, 39, 46, 47, 61, 66, 64, 23, 17, 15, 13, 14, 20, 8, 14, 3, 11, -91, -38], "line": "… 4...O-O 5.e5 5...Ne8 6.f4 6...d6 7.Be3 7...c5 8.dxc5 …"}, {"id": "univ_c5", "chapter": "Система Земиша · 5.f3", "title": "Универсальное 5…c5!? против Земиша", "tag": "÷", "eval": "÷ универсальное средство", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "O-O", "f3", "c5", "Nge2", "cxd4", "Nxd4", "Nc6", "Be3", "Qb6"], "notes": {"10": "«На любой ответ белых в качестве универсального средства можно предложить контрудар 5…c5». При попытке перейти в систему Земиша белые оказываются перед выбором: на 6.dxc5 перспективна жертва пешки 6…b6!, а при наиболее естественном ответе <a class=\"inl\" data-s=\"0\">6.d5 d6</a> возникает структура Модерн-Бенони.", "11": "Белые держат напряжение.", "16": "Ключевая позиция: теперь нехорошо 9.Qd2?! из-за 9…<a class=\"inl\" data-s=\"1\">Nxd4 10.Bxd4 Nxe4!</a> В случае 6.Be2 cxd4 7.Nxd4 Nc6 белые оказываются в сицилианской защите — варианте Мароци."}, "evals": {"16": "÷"}, "subs": {}, "isubs": {"0": {"kind": "line", "startFen": "rnbq1rk1/pp1pppbp/5np1/2p5/2PPP3/2N2P2/PP4PP/R1BQKBNR w KQ - 0 6", "plies": [{"san": "d5", "fen": "rnbq1rk1/pp1pppbp/5np1/2pP4/2P1P3/2N2P2/PP4PP/R1BQKBNR b KQ - 0 6", "from": "d4", "to": "d5", "num": "6."}, {"san": "d6", "fen": "rnbq1rk1/pp2ppbp/3p1np1/2pP4/2P1P3/2N2P2/PP4PP/R1BQKBNR w KQ - 0 7", "from": "d7", "to": "d6", "num": "6…"}]}, "1": {"kind": "line", "startFen": "r1bq1rk1/pp1pppbp/2n2np1/8/2PNP3/2N1BP2/PP4PP/R2QKB1R b KQ - 2 8", "plies": [{"san": "Nxd4", "fen": "r1bq1rk1/pp1pppbp/5np1/8/2PnP3/2N1BP2/PP4PP/R2QKB1R w KQ - 0 9", "from": "c6", "to": "d4", "num": "8…"}, {"san": "Bxd4", "fen": "r1bq1rk1/pp1pppbp/5np1/8/2PBP3/2N2P2/PP4PP/R2QKB1R b KQ - 0 9", "from": "e3", "to": "d4", "num": "9."}, {"san": "Nxe4", "fen": "r1bq1rk1/pp1pppbp/6p1/8/2PBn3/2N2P2/PP4PP/R2QKB1R w KQ - 0 10", "from": "f6", "to": "e4", "num": "9…"}]}}, "cp": [42, 42, 42, 35, 40, 40, 68, 57, 53, 44, 56, 24, 45, 27, 33, 48, 88], "line": "… 4...O-O 5.f3 5...c5 6.Nge2 6...cxd4 7.Nxd4 7...Nc6 8.Be3 …"}, {"id": "k_main", "chapter": "Классическая система · 5.Nf3 0-0 6.Be2 e5", "title": "Главная позиция: 7.0-0 Nc6 8.d5 Ne7", "tag": "÷", "eval": "÷ основная позиция системы", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "Nf3", "O-O", "Be2", "e5", "O-O", "Nc6", "d5", "Ne7"], "notes": {"12": "Классическая система: пешке e4 противостоит пешка e5, и обе стороны без промедления развили королевский фланг.", "14": "«Согласно моей концепции создания контригры, на 7.0-0 лучшим ответом является 7…Nc6» (Гуфельд). Так конь наиболее эффективно воздействует на центр и вынуждает белых его закрыть.", "16": "Основная позиция системы, впервые встретившаяся в партии Тайманов — Аронин, 20-й чемпионат СССР, 1952. Крамник формулировал правило так: «когда два коня находятся в связке, например на d7 и f6, они менее поворотливы, а ферзевый конь на e7 смотрится лучше».", "15": "Белые вынуждены закрыть центр."}, "evals": {"16": "÷"}, "subs": {}, "isubs": {}, "cp": [35, 44, 41, 41, 50, 48, 58, 60, 69, 63, 55, 50, 62, 50, 75, 67, 63], "line": "… 7.O-O 7...Nc6 8.d5 8...Ne7"}, {"id": "k_bayonet", "chapter": "Классическая система · 5.Nf3 0-0 6.Be2 e5", "title": "9.b4 — «байонет»", "tag": "÷", "eval": "÷ гонка на разных флангах", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "Nf3", "O-O", "Be2", "e5", "O-O", "Nc6", "d5", "Ne7", "b4", "Nh5", "g3", "f5", "exf5", "Nxf5", "Ne4", "Nf6", "Bg5"], "notes": {"17": "«Байонет-атака». Вариант, популярности которого немало способствовал Владимир Крамник: белые не тратят время на подготовку и сразу идут вперёд.", "18": "Активное продолжение, практически вынуждающее белых к ослаблению королевского фланга. Фишер предпочитал 9…Ne8 и после 10.Rc1 f5 успешно противодействовал атаке Тайманова на ферзевом фланге.", "19": "Белые препятствуют проникновению коня на f4. Другое основное продолжение — 10.Rc1.", "20": "Решительный ход, подкреплённый тактикой. При подрыве 10…c6?! белые опережают в развитии инициативы: 11.Rc1 f5 12.dxc6 bxc6 13.c5!", "22": "Чёрные не опасаются 12.g4? ввиду 12…Nd4! 13.gxh5 Nxe2+ 14.Qxe2 Bg4 — материал отыгрывается с прибылью.", "23": "Полезно занять центральный пункт с видами на g5."}, "evals": {"25": "÷"}, "subs": {}, "isubs": {}, "cp": [41, 42, 40, 39, 48, 48, 64, 64, 64, 64, 64, 58, 58, 64, 68, 74, 79, 72, 73, 48, 44, -53, 32, 30, 32, 39], "line": "… 7.O-O 7...Nc6 8.d5 8...Ne7 9.b4 9...Nh5 10.g3 10...f5 …"}, {"id": "k_ne1", "chapter": "Классическая система · 5.Nf3 0-0 6.Be2 e5", "title": "9.Ne1 Nd7 10.Nd3", "tag": "÷", "eval": "÷ классический план белых", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "Nf3", "O-O", "Be2", "e5", "O-O", "Nc6", "d5", "Ne7", "Ne1", "Nd7", "Nd3", "f5", "f3", "f4"], "notes": {"17": "Классический план: конь идёт на d3, чтобы поддержать прорыв c4-c5 и держать под контролем поля b4 и f4.", "18": "Ответная перегруппировка: конь освобождает линию «f» и поддерживает e5.", "20": "Стандартный подрыв.", "22": "Пешка идёт вперёд, и дальше чёрные будут наступать g6-g5-g4."}, "evals": {"22": "÷"}, "subs": {}, "isubs": {}, "cp": [39, 39, 39, 39, 48, 47, 58, 65, 67, 62, 61, 64, 65, 60, 71, 70, 72, 57, 57, 59, 64, 60, 77], "line": "… 7.O-O 7...Nc6 8.d5 8...Ne7 9.Ne1 9...Nd7 10.Nd3 10...f5 …"}, {"id": "k_nd2", "chapter": "Классическая система · 5.Nf3 0-0 6.Be2 e5", "title": "9.Nd2 — гибкий ход", "tag": "÷", "eval": "÷ три ответа у чёрных", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "Nf3", "O-O", "Be2", "e5", "O-O", "Nc6", "d5", "Ne7", "Nd2", "c5"], "notes": {"17": "Белые освобождают дорогу пешке f и готовят b2-b4 или c4-c5.", "18": "Один из трёх основных планов наряду с 9…c6 и 9…a5: чёрные закрывают ферзевый фланг и переключаются на королевский."}, "evals": {"18": "÷"}, "subs": {}, "isubs": {}, "cp": [34, 43, 45, 39, 47, 47, 61, 58, 59, 60, 60, 64, 59, 65, 75, 73, 69, 33, 53], "line": "… 7.O-O 7...Nc6 8.d5 8...Ne7 9.Nd2 9...c5"}, {"id": "k_bd2", "chapter": "Классическая система · 5.Nf3 0-0 6.Be2 e5", "title": "9.Bd2 Nh5 10.g3", "tag": "÷", "eval": "÷ обоюдоострая игра", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "Nf3", "O-O", "Be2", "e5", "O-O", "Nc6", "d5", "Ne7", "Bd2", "Nh5", "g3", "f5"], "notes": {"17": "Скромный ход: слон освобождает поле c1 для ладьи и заранее прикрывает ферзевый фланг.", "20": "План чёрных всегда один и тот же — штурм на королевском фланге."}, "evals": {"20": "÷"}, "subs": {}, "isubs": {}, "cp": [42, 39, 43, 45, 47, 44, 60, 60, 65, 61, 61, 61, 65, 63, 69, 75, 75, 45, 63, 36, 28], "line": "… 7.O-O 7...Nc6 8.d5 8...Ne7 9.Bd2 9...Nh5 10.g3 10...f5"}, {"id": "k_d5", "chapter": "Классическая система · 5.Nf3 0-0 6.Be2 e5", "title": "7.d5 Nbd7 8.Bg5 Nc5", "tag": "÷", "eval": "÷ разносторонние рокировки", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "Nf3", "O-O", "Be2", "e5", "d5", "Nbd7", "Bg5", "Nc5", "Qc2", "a5", "O-O-O"], "notes": {"13": "Белые препятствуют выводу коня на c6 радикально. Закрытием центра они определяют дальнейший курс боевых действий: пешечная структура смотрится идеально для атаки на ферзевом фланге. Однако при столь ранней стабилизации центра чёрные получают возможность организовать контригру на противоположной стороне доски — «раннее надвижение белой пешки d может рассматриваться как определённое достижение для чёрных».", "14": "Чёрные временно используют пункт c5 для коня, чтобы препятствовать атаке белых на ферзевом фланге, и подготавливают свой традиционный прорыв f7-f5.", "18": "Захват пространства: конь c5 закрепляется, ведь b2-b4 теперь не сыграть.", "19": "Разносторонние рокировки — сигнал к обоюдному штурму."}, "evals": {"19": "÷"}, "subs": {}, "isubs": {}, "cp": [41, 39, 43, 44, 43, 36, 63, 63, 63, 68, 65, 64, 65, 38, 68, 10, 85, 60, 61, 19], "line": "… 7.d5 7...Nbd7 8.Bg5 8...Nc5 9.Qc2 9...a5 10.O-O-O"}, {"id": "k_d5h6", "chapter": "Классическая система · 5.Nf3 0-0 6.Be2 e5", "title": "7.d5 Nbd7 8.Bg5 h6 9.Bh4 g5", "tag": "÷", "eval": "÷ радикальное решение", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "Nf3", "O-O", "Be2", "e5", "d5", "Nbd7", "Bg5", "h6", "Bh4", "g5", "Bg3", "Nh5"], "notes": {"16": "Сначала вопрос слону.", "18": "Радикально: чёрные ослабляют собственного короля, но выигрывают темп и запирают слона.", "20": "Слон g3 обречён на размен, а конь идёт на f4."}, "evals": {"20": "÷"}, "subs": {}, "isubs": {}, "cp": [35, 42, 43, 42, 49, 42, 63, 69, 66, 66, 69, 67, 67, 51, 57, 17, 10, 8, -3, -4, 0], "line": "… 7.d5 7...Nbd7 8.Bg5 8...h6 9.Bh4 9...g5 10.Bg3 10...Nh5"}, {"id": "k_a5", "chapter": "Классическая система · 5.Nf3 0-0 6.Be2 e5", "title": "7.d5 a5 8.Bg5 h6 9.Bh4 Na6", "tag": "÷", "eval": "÷ конь через a6", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "Nf3", "O-O", "Be2", "e5", "d5", "a5", "Bg5", "h6", "Bh4", "Na6", "O-O", "Qe8"], "notes": {"14": "Сначала фиксируем ферзевый фланг: поле c5 достанется коню.", "18": "Конь идёт на край доски, чтобы попасть на c5.", "20": "Ферзь освобождает поле d8 для ладьи и поддерживает подрыв f7-f5."}, "evals": {"20": "÷"}, "subs": {}, "isubs": {}, "cp": [42, 34, 47, 42, 43, 43, 67, 59, 69, 67, 66, 63, 65, 50, 52, 48, 47, 45, 38, -10, 23], "line": "… 7.d5 7...a5 8.Bg5 8...h6 9.Bh4 9...Na6 10.O-O 10...Qe8"}, {"id": "k_be3", "chapter": "Классическая система · 5.Nf3 0-0 6.Be2 e5", "title": "7.Be3 Ng4 8.Bg5 f6", "tag": "÷", "eval": "÷ косвенно против Nc6", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "Nf3", "O-O", "Be2", "e5", "Be3", "Ng4", "Bg5", "f6", "Bc1", "Nc6"], "notes": {"13": "Экономя темп на рокировке, белые в некоторой степени нивелируют ход 7…Nc6: теперь при 8.d5 Ne7 они успевают провести полезный манёвр 9.Nd2 при слоне на e3 и опережают в развитии инициативы.", "14": "Однако наличие слона на e3 всё же позволяет чёрным реализовать тему Nb8-c6 — после предварительного оттеснения слона.", "16": "Слона гонят обратно, и белые теряют время.", "18": "Всё-таки конь попадает на c6, ради чего и была затеяна операция. При отступлении 9.Bh4 сделать это сложнее."}, "evals": {"18": "÷"}, "subs": {}, "isubs": {}, "cp": [36, 33, 43, 43, 40, 43, 61, 60, 69, 72, 72, 70, 70, 48, 59, 56, 62, 31, 41], "line": "… 7.Be3 7...Ng4 8.Bg5 8...f6 9.Bc1 9...Nc6"}, {"id": "k_be3ed", "chapter": "Классическая система · 5.Nf3 0-0 6.Be2 e5", "title": "7.Be3 exd4 — репертуар Накамуры", "tag": "=", "eval": "= чёрные поддерживают равновесие", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "Nf3", "O-O", "Be2", "e5", "Be3", "exd4", "Nxd4", "Re8", "f3", "c6", "Bf2", "d5", "exd5", "cxd5", "O-O", "Nc6"], "notes": {"14": "В дебютном репертуаре Накамуры контригра в центре: чёрные не закрывают позицию, а сразу вскрывают её.", "18": "Подготовка главного удара.", "20": "Вот он. Центр вскрывается, и фигуры чёрных получают простор.", "24": "«Чёрные поддерживают равновесие» — вывод книги по этой линии."}, "evals": {"24": "="}, "subs": {}, "isubs": {}, "cp": [49, 35, 43, 40, 43, 42, 72, 67, 68, 71, 71, 71, 69, 62, 51, 43, 39, 39, 40, 34, 46, 41, 42, 39, 35], "line": "… 7.Be3 7...exd4 8.Nxd4 8...Re8 9.f3 9...c6 10.Bf2 10...d5 …"}, {"id": "a_c5", "chapter": "Система Авербаха · 5.Be2 0-0 6.Bg5", "title": "6…c5 7.d5 e6 — на стыке с Бенони", "tag": "÷", "eval": "÷ модерн-Бенони", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "Be2", "O-O", "Bg5", "c5", "d5", "e6", "dxe6", "Bxe6", "Nf3", "Nc6", "O-O", "Nd4"], "notes": {"11": "Система Авербаха, впервые применённая в 1954 году. Основная цель расстановки слонов в таком порядке — помешать контригре чёрных, связанной с ходами e7-e5 и f7-f5. «Есть варианты-созидатели и варианты-разрушители. В число последних входит система Авербаха, в которой белые действуют по поговорке: сам не гам и другому не дам» (Гуфельд).", "12": "Наиболее активные планы игры чёрных связаны именно с этим подрывом.", "14": "С дальнейшим разменом на d5 игра идёт на стыке с системой Модерн-Бенони.", "15": "Белым это невыгодно.", "20": "С идеей <a class=\"inl\" data-s=\"0\">11.Nxd4? cxd4 12.Qxd4 Nxe4!</a> — у чёрных отличная игра."}, "evals": {"20": "÷"}, "subs": {}, "isubs": {"0": {"kind": "line", "startFen": "r2q1rk1/pp3pbp/3pbnp1/2p3B1/2PnP3/2N2N2/PP2BPPP/R2Q1RK1 w - - 4 11", "plies": [{"san": "Nxd4", "fen": "r2q1rk1/pp3pbp/3pbnp1/2p3B1/2PNP3/2N5/PP2BPPP/R2Q1RK1 b - - 0 11", "from": "f3", "to": "d4", "num": "11."}, {"san": "cxd4", "fen": "r2q1rk1/pp3pbp/3pbnp1/6B1/2PpP3/2N5/PP2BPPP/R2Q1RK1 w - - 0 12", "from": "c5", "to": "d4", "num": "11…"}, {"san": "Qxd4", "fen": "r2q1rk1/pp3pbp/3pbnp1/6B1/2PQP3/2N5/PP2BPPP/R4RK1 b - - 0 12", "from": "d1", "to": "d4", "num": "12."}, {"san": "Nxe4", "fen": "r2q1rk1/pp3pbp/3pb1p1/6B1/2PQn3/2N5/PP2BPPP/R4RK1 w - - 0 13", "from": "f6", "to": "e4", "num": "12…"}]}}, "cp": [36, 33, 42, 42, 50, 45, 69, 69, 65, 70, 70, 47, 50, 36, 41, 28, 27, 25, 21, 24, 28], "line": "… 6...c5 7.d5 7...e6 8.dxe6 8...Bxe6 9.Nf3 9...Nc6 10.O-O …"}, {"id": "a_h6", "chapter": "Система Авербаха · 5.Be2 0-0 6.Bg5", "title": "6…h6 7.Be3 c5 — сначала вопрос слону", "tag": "÷", "eval": "÷ обычный путь", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "Be2", "O-O", "Bg5", "h6", "Be3", "c5", "d5", "e6", "Qd2", "Kh7"], "notes": {"12": "Но обычно чёрные предварительно оттесняют слона — и только потом бьют по центру.", "14": "И только теперь бьют по центру — с выигранным темпом по сравнению с немедленным 6…c5.", "18": "Полезная профилактика: король уходит с диагонали и освобождает g8."}, "evals": {"18": "÷"}, "subs": {}, "isubs": {}, "cp": [32, 40, 45, 41, 50, 50, 70, 67, 69, 69, 65, 38, 51, 39, 41, 38, 40, 34, 46], "line": "… 6...h6 7.Be3 7...c5 8.d5 8...e6 9.Qd2 9...Kh7"}, {"id": "a_e5", "chapter": "Система Авербаха · 5.Be2 0-0 6.Bg5", "title": "6…Nbd7 7.Qd2 e5 — под связкой", "tag": "÷", "eval": "÷ надёжно, но непросто", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "Be2", "O-O", "Bg5", "Nbd7", "Qd2", "e5", "d5", "Nc5", "f3", "a5"], "notes": {"12": "План с ходом e7-e5, который Гуфельд не раз испытывал против Полугаевского.", "14": "«Хотя «Энциклопедия» считает его вполне надёжным, по своему опыту знаю, что непросто играть под связкой слона g5» (Гуфельд).", "16": "Конь занимает форпост и давит на e4.", "18": "Закрепляем коня — b2-b4 теперь не провести."}, "evals": {"18": "÷"}, "subs": {}, "isubs": {}, "cp": [41, 32, 41, 42, 49, 43, 68, 68, 71, 71, 72, 36, 86, 76, 70, 78, 72, 81, 107], "line": "… 6...Nbd7 7.Qd2 7...e5 8.d5 8...Nc5 9.f3 9...a5"}, {"id": "a_dxc5", "chapter": "Система Авербаха · 5.Be2 0-0 6.Bg5", "title": "6…c5 7.dxc5 — размен", "tag": "=", "eval": "= упрощения", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "Be2", "O-O", "Bg5", "c5", "dxc5", "dxc5", "Qxd8", "Rxd8"], "notes": {"13": "Прямолинейный размен ведёт к раннему эндшпилю.", "16": "Ферзей нет, но позиция далеко не мертва: у чёрных пара слонов и игра по линии «d»."}, "evals": {"16": "="}, "subs": {}, "isubs": {}, "cp": [32, 34, 41, 41, 42, 43, 72, 72, 73, 73, 70, 29, 29, -14, -7, -39, -34], "line": "… 6...c5 7.dxc5 7...dxc5 8.Qxd8 8...Rxd8"}, {"id": "f_nc6", "chapter": "Фианкетто слона · 3.g3", "title": "Фианкетто: 6…Nc6! 7.Nc3 e5", "tag": "÷", "eval": "÷ конь берёт быка за рога", "moves": ["d4", "Nf6", "c4", "g6", "g3", "Bg7", "Bg2", "O-O", "Nf3", "d6", "O-O", "Nc6", "Nc3", "e5", "d5", "Ne7", "c5", "e4"], "notes": {"5": "Фианкеттируя слона, белые берут под прицел ферзевый фланг, контролируют поля e4 и d5 и надёжно укрепляют позицию короля. Одна из самых многоплановых и опасных для чёрных систем.", "12": "«Универсальный ход — восклицательный знак моя оценка», когда конь атакует пункт d4. Иными словами, конь сразу берёт быка за рога.", "14": "Поскольку белые оставляют чёрным выбор плана дальнейшей игры, выпад пешки e является наиболее последовательным путём атаки пункта d4.", "16": "На принципиальный ответ 8.d5 чёрные обычно отступают именно так. К позиции из югославского варианта ведёт 8…<a class=\"inl\" data-s=\"0\">Na5 9.Nd2 c5</a>.", "18": "Надвижение c4-c5 диктуется пешечной структурой, где у белых, по терминологии Нимцовича, «качественное пешечное превосходство» на ферзевом фланге. Вопрос лишь в том, не лучше ли сначала укрепить центр путём 9.e4 — в наше время это стало основным продолжением белых."}, "evals": {"18": "÷"}, "subs": {}, "isubs": {"0": {"kind": "line", "startFen": "r1bq1rk1/ppp2pbp/2np1np1/3Pp3/2P5/2N2NP1/PP2PPBP/R1BQ1RK1 b - - 0 8", "plies": [{"san": "Na5", "fen": "r1bq1rk1/ppp2pbp/3p1np1/n2Pp3/2P5/2N2NP1/PP2PPBP/R1BQ1RK1 w - - 1 9", "from": "c6", "to": "a5", "num": "8…"}, {"san": "Nd2", "fen": "r1bq1rk1/ppp2pbp/3p1np1/n2Pp3/2P5/2N3P1/PP1NPPBP/R1BQ1RK1 b - - 2 9", "from": "f3", "to": "d2", "num": "9."}, {"san": "c5", "fen": "r1bq1rk1/pp3pbp/3p1np1/n1pPp3/2P5/2N3P1/PP1NPPBP/R1BQ1RK1 w - c6 0 10", "from": "c7", "to": "c5", "num": "9…"}]}}, "cp": [42, 36, 38, 38, 43, 20, 45, 42, 55, 26, 64, 44, 47, 39, 40, 48, 50, 19, 21], "line": "… 3.g3 3...Bg7 4.Bg2 4...O-O 5.Nf3 5...d6 6.O-O 6...Nc6 …"}, {"id": "f_bf5", "chapter": "Фианкетто слона · 3.g3", "title": "7…Bf5 — контроль над e4", "tag": "÷", "eval": "÷ борьба за поле e4", "moves": ["d4", "Nf6", "c4", "g6", "g3", "Bg7", "Bg2", "O-O", "Nf3", "d6", "O-O", "Nc6", "Nc3", "Bf5", "d5", "Na5", "Nd2", "c5"], "notes": {"5": "Фианкеттируя слона, белые берут под прицел ферзевый фланг, контролируют поля e4 и d5 и надёжно укрепляют позицию короля — одна из самых многоплановых и опасных для чёрных систем.", "14": "Контроль над пунктом e4 — так называется эта линия в книге.", "16": "Чёрные не опасаются за будущее коня после 7.d5, так как после Nbd2 и c7-c5 он участвует в контригре на ферзевом фланге."}, "evals": {"18": "÷"}, "subs": {}, "isubs": {}, "cp": [47, 35, 43, 43, 43, 25, 42, 44, 44, 27, 42, 39, 43, 47, 66, 55, 56, 52, 58], "line": "… 3.g3 3...Bg7 4.Bg2 4...O-O 5.Nf3 5...d6 6.O-O 6...Nc6 …"}, {"id": "f_a6", "chapter": "Фианкетто слона · 3.g3", "title": "7…a6 — фланговая атака", "tag": "÷", "eval": "÷ игра на ферзевом фланге", "moves": ["d4", "Nf6", "c4", "g6", "g3", "Bg7", "Bg2", "O-O", "Nf3", "d6", "O-O", "Nc6", "Nc3", "a6", "d5", "Na5", "Nd2", "c5", "Qc2", "Rb8"], "notes": {"14": "Продолжение, известное в теории как <b>система Панно</b>: цель — подготовка пешечной фланговой атаки b7-b5. После перевода ладьи на b8 воздействие слона g2 на ферзевый фланг несущественно.", "15": "Белые применяют два основных метода: закрытие центра, как здесь, либо отказ от d4-d5 со стремлением сохранить подвижный пешечный центр. Во втором случае для подготовки e2-e4 им необходимо ходом h2-h3 предотвратить выпад Bc8-g4, усиливающий воздействие на пункт d4.", "20": "Всё готово к подрыву b7-b5."}, "evals": {"20": "÷"}, "subs": {}, "isubs": {}, "cp": [43, 35, 43, 43, 43, 24, 38, 37, 38, 25, 57, 44, 46, 46, 53, 33, 40, 54, 50, 34, 52], "line": "… 3.g3 3...Bg7 4.Bg2 4...O-O 5.Nf3 5...d6 6.O-O 6...Nc6 …"}, {"id": "f_yugo", "chapter": "Фианкетто слона · 3.g3", "title": "Югославский вариант 6…c5", "tag": "÷", "eval": "÷ удар по центру с другой стороны", "moves": ["d4", "Nf6", "c4", "g6", "Nf3", "Bg7", "g3", "O-O", "Bg2", "d6", "O-O", "c5", "Nc3", "Nc6", "d5", "Na5", "Nd2", "a6", "Qc2", "Rb8"], "notes": {"12": "Атака центра, получившая название югославского варианта — благодаря усилиям югославских шахматистов в 50-е годы. Такой порядок ходов, когда пешечный подрыв предшествует развитию коня, «можно рекомендовать наравне с 6…Nc6».", "16": "По идейному содержанию — воздействию на пункт d4 — это та же тема, что и в варианте с 6…Nc6.", "20": "Чёрные на время оставляют дома пешку e7 и наносят удар по центру с другой стороны, увеличивая диапазон слона g7."}, "evals": {"20": "÷"}, "subs": {}, "isubs": {}, "cp": [45, 43, 43, 43, 43, 43, 43, 25, 25, 24, 46, 48, 44, 35, 42, 41, 49, 41, 49, 45, 44], "line": "… 3.Nf3 3...Bg7 4.g3 4...O-O 5.Bg2 5...d6 6.O-O 6...c5 …"}, {"id": "p4_e6", "chapter": "Вариант четырёх пешек · 5.f4", "title": "Четыре пешки: 7…e6 8.Be2 exd5", "tag": "÷", "eval": "÷ структура Бенони", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "f4", "O-O", "Nf3", "c5", "d5", "e6", "Be2", "exd5", "cxd5", "Bg4", "O-O", "Nbd7"], "notes": {"9": "Вариант четырёх пешек — самая амбициозная попытка: белые занимают весь центр.", "12": "Немедленный удар по основанию цепи.", "14": "Вскрытие линий, пока белые не закончили развитие.", "17": "Получилась структура Бенони с пешкой f4 — обоюдоострая позиция.", "20": "Фигуры чёрных выходят с темпами, и пешечная громада белых может стать обузой."}, "evals": {"20": "÷"}, "subs": {}, "isubs": {}, "cp": [43, 43, 43, 43, 43, 43, 61, 69, 65, 36, 42, 43, 39, 31, 32, 29, 31, 28, 41, 57, 55], "line": "… 7...e6 8.Be2 8...exd5 9.cxd5 9...Bg4 10.O-O 10...Nbd7"}, {"id": "p4_b5", "chapter": "Вариант четырёх пешек · 5.f4", "title": "7…b5!? — гамбит", "tag": "÷", "eval": "÷ гамбитная контригра", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "f4", "O-O", "Nf3", "c5", "d5", "b5", "cxb5", "a6", "bxa6", "Qa5", "Bd2", "Bxa6"], "notes": {"14": "Гамбитная идея в духе волжского гамбита: чёрные отдают пешку за вскрытие линий на ферзевом фланге.", "20": "За пешку у чёрных давление по линиям «a» и «b» и отличная игра для обоих слонов."}, "evals": {"20": "÷"}, "subs": {}, "isubs": {}, "cp": [43, 43, 43, 43, 41, 42, 71, 70, 72, 26, 25, 26, 23, 31, 104, 60, 67, 35, 42, 34, 38], "line": "… 7...b5 8.cxb5 8...a6 9.bxa6 9...Qa5 10.Bd2 10...Bxa6"}, {"id": "game_immortal", "chapter": "Партии целиком · с комментариями", "title": "«Бессмертная»: Багиров — Гуфельд, Кировабад 1973", "tag": "0-1", "eval": "0-1 мат объявлен не позднее восьмого хода", "moves": ["d4", "g6", "c4", "Bg7", "Nc3", "d6", "e4", "Nf6", "f3", "O-O", "Be3", "Nc6", "Nge2", "Rb8", "Qd2", "a6", "Bh6", "b5", "h4", "e5", "Bxg7", "Kxg7", "h5", "Kh8", "Nd5", "bxc4", "hxg6", "fxg6", "Qh6", "Nh5", "g4", "Rxb2", "gxh5", "g5", "Rg1", "g4", "O-O-O", "Rxa2", "Nef4", "exf4", "Nxf4", "Rxf4", "Qxf4", "c3", "Bc4", "Ra3", "fxg4", "Nb4", "Kb1", "Be6", "Bxe6", "Nd3", "Qf7", "Qb8+", "Bb3", "Rxb3+", "Kc2", "Nb4+", "Kxb3", "Nd5+", "Kc2", "Qb2+", "Kd3", "Qb5+"], "notes": {"2": "«Каждый человек рождается с предпосылками гениальности. Но реализуются они у единиц… Мне тоже повезло: если во мне и есть шахматный гений, то он проснулся именно в тот вечер, когда я играл с Владимиром Багировым» (Гуфельд).", "12": "Тот самый главный вариант. «Именно этот ход служил мне верой и правдой на протяжении всей моей шахматной жизни, такое постоянство было вознаграждено Провидением».", "17": "Багиров смеётся: «Стоит разменять слона g7, и Гуфельд обезоружен!»", "18": "«В дальнейшем я пришёл к выводу, что сильнее сразу контратаковать в центре после отвлечения ферзя — 9…<a class=\"inl\" data-s=\"0\">Bxh6 10.Qxh6 e5</a>».", "24": "Принятие жертвы 12…<a class=\"inl\" data-s=\"1\">Nxh5 13.g4 Nf4 14.Nxf4 exf4 15.cxb5</a> вело к проигрышной позиции. Геллер считал отвод короля неудачным, но Гуфельд отстоял свою оценку — и 15 лет спустя Геллер снял вопросительный знак к этому ходу.", "25": "«Правильная стратегия. Грозит <a class=\"inl\" data-s=\"2\">14.Nxf6 и 15.d5</a>, после чего атака будет развиваться сама собой. А в подобных ситуациях промедление смерти подобно».", "26": "«Чтобы оправдать предшествующую игру, приходится допустить атаку соперника. Но белым ещё нужно подвести ладью a1. Против этого и направлена контригра на ферзевом фланге».", "29": "«Теперь спокойной жизни не жди. Но кто бы не сделал столь грозный выпад? Кажется невероятным, что именно этот ход выпускает то минимальное преимущество, которое положено иметь белым в дебюте».", "30": "«Единственный, но вполне достаточный аргумент».", "32": "«Намечаются жертвы. Пока это не контратака, а лишь контригра, отвлекающая внимание белых».", "36": "«Обстановка накалилась до предела. Белый король тоже оказался под огнём».", "40": "Второй восклицательный знак — за ход белых. «Это моя и, надеюсь, всех любителей шахмат благодарность Багирову за его соавторство в создании шахматного шедевра».", "44": "«Пример того, как знание общих принципов и приёмов облегчает расчёт вариантов. Пешка c3 остаётся штыком, приставленным к горлу белого короля».", "46": "«<b>Самый трудный ход в партии, а быть может, и в моей жизни!</b>» Напрашивалось 23…Ra4, но после спокойного 24.Bb3! наступление захлёбывалось.", "50": "«Перебирая дальнейшие варианты, я вдруг почувствовал, что фигуры на доске мелькают, как в калейдоскопе. Одна фигура уступает место другой, ей на смену приходит третья — и так вплоть до создания заключительной картины».", "52": "«Чтобы открыть дорогу ферзю на решающую магистраль b8-b1, чёрные каждым ходом жертвуют по фигуре».", "58": "«Единственный решающий ход».", "64": "<b>Белые сдались</b> ввиду <a class=\"inl\" data-s=\"3\">33.Kc2 Qe2+ 34.Kb3 Qb2+ 35.Kc4 Qb5#</a>.<br><br>«Каждый художник мечтает создать свою Джоконду, каждый шахматист — сыграть свою бессмертную партию. Ни одна партия не принесла мне такого удовлетворения, как эта»."}, "evals": {"64": "0-1"}, "subs": {}, "isubs": {"0": {"kind": "line", "startFen": "1rbq1rk1/1pp1ppbp/p1np1npB/8/2PPP3/2N2P2/PP1QN1PP/R3KB1R b KQ - 1 9", "plies": [{"san": "Bxh6", "fen": "1rbq1rk1/1pp1pp1p/p1np1npb/8/2PPP3/2N2P2/PP1QN1PP/R3KB1R w KQ - 0 10", "from": "g7", "to": "h6", "num": "9…"}, {"san": "Qxh6", "fen": "1rbq1rk1/1pp1pp1p/p1np1npQ/8/2PPP3/2N2P2/PP2N1PP/R3KB1R b KQ - 0 10", "from": "d2", "to": "h6", "num": "10."}, {"san": "e5", "fen": "1rbq1rk1/1pp2p1p/p1np1npQ/4p3/2PPP3/2N2P2/PP2N1PP/R3KB1R w KQ - 0 11", "from": "e7", "to": "e5", "num": "10…"}]}, "1": {"kind": "line", "startFen": "1rbq1r2/2p2pkp/p1np1np1/1p2p2P/2PPP3/2N2P2/PP1QN1P1/R3KB1R b KQ - 0 12", "plies": [{"san": "Nxh5", "fen": "1rbq1r2/2p2pkp/p1np2p1/1p2p2n/2PPP3/2N2P2/PP1QN1P1/R3KB1R w KQ - 0 13", "from": "f6", "to": "h5", "num": "12…"}, {"san": "g4", "fen": "1rbq1r2/2p2pkp/p1np2p1/1p2p2n/2PPP1P1/2N2P2/PP1QN3/R3KB1R b KQ - 0 13", "from": "g2", "to": "g4", "num": "13."}, {"san": "Nf4", "fen": "1rbq1r2/2p2pkp/p1np2p1/1p2p3/2PPPnP1/2N2P2/PP1QN3/R3KB1R w KQ - 1 14", "from": "h5", "to": "f4", "num": "13…"}, {"san": "Nxf4", "fen": "1rbq1r2/2p2pkp/p1np2p1/1p2p3/2PPPNP1/2N2P2/PP1Q4/R3KB1R b KQ - 0 14", "from": "e2", "to": "f4", "num": "14."}, {"san": "exf4", "fen": "1rbq1r2/2p2pkp/p1np2p1/1p6/2PPPpP1/2N2P2/PP1Q4/R3KB1R w KQ - 0 15", "from": "e5", "to": "f4", "num": "14…"}, {"san": "cxb5", "fen": "1rbq1r2/2p2pkp/p1np2p1/1P6/3PPpP1/2N2P2/PP1Q4/R3KB1R b KQ - 0 15", "from": "c4", "to": "b5", "num": "15."}]}, "2": {"kind": "line", "startFen": "1rbq1r1k/2p2p1p/p1np1np1/3Np2P/2pPP3/5P2/PP1QN1P1/R3KB1R w KQ - 0 14", "plies": [{"san": "Nxf6", "fen": "1rbq1r1k/2p2p1p/p1np1Np1/4p2P/2pPP3/5P2/PP1QN1P1/R3KB1R b KQ - 0 14", "from": "d5", "to": "f6", "num": "14."}, {"san": "d5", "fen": "1rbq1r1k/2p2p1p/p1n2Np1/3pp2P/2pPP3/5P2/PP1QN1P1/R3KB1R w KQ - 0 15", "from": "d6", "to": "d5", "num": "14…"}]}, "3": {"kind": "line", "startFen": "7k/2p2Q1p/p2p4/1q1n3P/3PP1P1/2pK4/8/3R2R1 w - - 5 33", "plies": [{"san": "Kc2", "fen": "7k/2p2Q1p/p2p4/1q1n3P/3PP1P1/2p5/2K5/3R2R1 b - - 6 33", "from": "d3", "to": "c2", "num": "33."}, {"san": "Qe2+", "fen": "7k/2p2Q1p/p2p4/3n3P/3PP1P1/2p5/2K1q3/3R2R1 w - - 7 34", "from": "b5", "to": "e2", "num": "33…"}, {"san": "Kb3", "fen": "7k/2p2Q1p/p2p4/3n3P/3PP1P1/1Kp5/4q3/3R2R1 b - - 8 34", "from": "c2", "to": "b3", "num": "34."}, {"san": "Qb2+", "fen": "7k/2p2Q1p/p2p4/3n3P/3PP1P1/1Kp5/1q6/3R2R1 w - - 9 35", "from": "e2", "to": "b2", "num": "34…"}, {"san": "Kc4", "fen": "7k/2p2Q1p/p2p4/3n3P/2KPP1P1/2p5/1q6/3R2R1 b - - 10 35", "from": "b3", "to": "c4", "num": "35."}, {"san": "Qb5#", "fen": "7k/2p2Q1p/p2p4/1q1n3P/2KPP1P1/2p5/8/3R2R1 w - - 11 36", "from": "b2", "to": "b5", "num": "35…"}]}}, "cp": [42, 40, 65, 42, 48, 54, 52, 55, 60, 43, 46, 37, 52, 63, 65, 62, 66, 56, 50, 42, 65, 81, 77, 78, 81, 44, 38, 33, 114, 135, 131, 63, 23, 52, 65, 8, 0, 41, 23, -2, 14, -53, -225, -242, -260, -311, -234, -345, -367, -457, -541, -569, -557, -9989, -9990, -9990, -9991, -9991, -9992, -9993, -9994, -9994, -9995, -9995, -9996], "line": "… "}]}];      /* [{id, short, h1, eyebrow, sub, credit, vars:[...]}] */
+const BOOKS  = [{"id": "kid", "short": "Староиндийская", "h1": "Староиндийская", "eyebrow": "Эдуард Гуфельд, Олег Стецко · 2-е издание · 2017", "sub": "«Искусство староиндийской защиты». Репертуар за чёрных — доска развёрнута с их стороны.", "credit": "Комментарии — пересказ разбора Гуфельда и Стецко своими словами.", "vars": [{"id": "z_nc6", "chapter": "Система Земиша · 5.f3", "title": "Главный вариант Гуфельда: 6…Nc6!", "tag": "÷", "eval": "÷ контригра на ферзевом фланге", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "f3", "O-O", "Be3", "Nc6", "Nge2", "Rb8", "Qd2", "a6"], "notes": {"9": "Система Земиша — «шахматный Корбюзье»: Земиш выстраивал мощную пешечную армаду в центре c3, c4, d4, e4. «Столь же односторонним представляется мне и построение в стиле Земиша на шахматной доске» (Гуфельд).", "10": "Рокировку до хода d7-d6 Гуфельд применял всю свою «староиндийскую» жизнь: «невинная на первый взгляд перестановка ходов не столько сужает возможности белых, сколько расширяет выбор чёрных». В известной степени ранняя рокировка носит и провокационный характер — допуская 5.e5, чёрные вызывают огонь на себя.", "12": "«Наиболее гибким оружием против системы Земиша является план, связанный с ходом 6…Nc6» (Гуфельд). Амбициозный выход коня — своего рода провокация: в случае напрашивающегося <a class=\"inl\" data-s=\"0\">7.d5 Ne5</a> чёрные готовы вскрыть линии ходом e7-e6 или c7-c6.", "13": "Наиболее гибкая система развития. Белые максимально подкрепляют центр фигурами и, кроме плана с длинной рокировкой, могут перебросить этого коня на ферзевый фланг: Ne2-c1-b3.", "14": "Прежде чем начинать операции в центре (e7-e5), целесообразно ходом b7-b5 захватить пространство на ферзевом фланге — туда, куда стремится белый король. Порядок ходов, где первой стартует ладья, ввёл в практику Игорь Зайцев.", "16": "Подготовка контрудара b7-b5 завершена. Смысл всего плана: конь с c6 не только атакует пункт d4, но и поддерживает атаку пешки c4 после <a class=\"inl\" data-s=\"1\">a7-a6, b7-b5</a>. Открытие «второго фронта» вынудит белых отвлечь часть сил от операции на королевском фланге."}, "evals": {"16": "÷"}, "subs": {}, "isubs": {"0": {"kind": "line", "startFen": "r1bq1rk1/ppp1ppbp/2np1np1/8/2PPP3/2N1BP2/PP4PP/R2QKBNR w KQ - 3 7", "plies": [{"san": "d5", "fen": "r1bq1rk1/ppp1ppbp/2np1np1/3P4/2P1P3/2N1BP2/PP4PP/R2QKBNR b KQ - 0 7", "from": "d4", "to": "d5", "num": "7."}, {"san": "Ne5", "fen": "r1bq1rk1/ppp1ppbp/3p1np1/3Pn3/2P1P3/2N1BP2/PP4PP/R2QKBNR w KQ - 1 8", "from": "c6", "to": "e5", "num": "7…"}]}, "1": {"kind": "plan", "startFen": "1rbq1rk1/ppp1ppbp/2np1np1/8/2PPP3/2N1BP2/PP1QN1PP/R3KB1R b KQ - 6 8", "plies": [{"san": "a6", "fen": "1rbq1rk1/1pp1ppbp/p1np1np1/8/2PPP3/2N1BP2/PP1QN1PP/R3KB1R w KQ - 0 9", "from": "a7", "to": "a6", "num": "8…"}, {"san": "b5", "fen": "1rbq1rk1/2p1ppbp/p1np1np1/1p6/2PPP3/2N1BP2/PP1QN1PP/R3KB1R w KQ - 0 10", "from": "b7", "to": "b5", "num": "9…"}]}}, "off": false, "cp": [24, 21, 25, 24, 45, 45, 55, 57, 53, 23, 36, 35, 62, 49, 57, 47, 46], "line": "… 4...d6 5.f3 5...O-O 6.Be3 6...Nc6 7.Nge2 7...Rb8 8.Qd2 …"}, {"id": "z_a4", "chapter": "Система Земиша · 5.f3", "title": "9.a4 — против b7-b5", "tag": "³", "eval": "³ контратака только усиливается", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "f3", "O-O", "Be3", "Nc6", "Nge2", "Rb8", "Qd2", "a6", "a4"], "notes": {"17": "Светозар Глигорич радикально препятствует продвижению b7-b5, признавая этим психологическое воздействие такой идеи контригры. Однако этот ход не отвечает духу варианта: белые слишком растягивают линию фронта, и контратака чёрных на ферзевом фланге только выигрывает в силе."}, "evals": {"17": "³"}, "subs": {}, "isubs": {}, "off": false, "cp": [39, 20, 21, 19, 35, 47, 53, 53, 54, 34, 34, 42, 52, 51, 71, 74, 71, 28], "line": "… 4...d6 5.f3 5...O-O 6.Be3 6...Nc6 7.Nge2 7...Rb8 8.Qd2 …"}, {"id": "z_nc1", "chapter": "Система Земиша · 5.f3", "title": "9.Nc1 — главный вариант системы", "tag": "÷", "eval": "÷ рельсы главного варианта", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "f3", "O-O", "Be3", "Nc6", "Nge2", "Rb8", "Qd2", "a6", "Nc1", "e5", "d5", "Nd4", "Nb3", "c5", "dxc6", "bxc6"], "notes": {"17": "В те годы теория рекомендовала именно это — конь идёт по маршруту e2-c1-b3, переводя игру на рельсы главного варианта системы.", "18": "Только теперь чёрные начинают операции в центре.", "24": "Смысл раннего Rb8: чёрные заблаговременно готовятся к вскрытию линии «b» — ладья уже стоит напротив пешки b2."}, "evals": {"24": "÷"}, "subs": {}, "isubs": {}, "off": false, "cp": [39, 19, 32, 42, 43, 49, 54, 54, 56, 35, 37, 47, 61, 64, 70, 67, 76, 50, 58, 51, 52, 60, 89, 87, 93], "line": "… 4...d6 5.f3 5...O-O 6.Be3 6...Nc6 7.Nge2 7...Rb8 8.Qd2 …"}, {"id": "z_bh6", "chapter": "Система Земиша · 5.f3", "title": "9.Bh6 — размен слона g7", "tag": "÷", "eval": "÷ у чёрных полноценная контригра", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "f3", "O-O", "Be3", "Nc6", "Nge2", "Rb8", "Qd2", "a6", "Bh6", "Bxh6", "Qxh6", "e5"], "notes": {"17": "Багиров смеётся: «Стоит разменять слона g7, и Гуфельд обезоружен!» В этой шутке немалая доля правды — но здесь потеря любимого слона огорчения не доставила: белые упускают драгоценное время.", "18": "«В дальнейшем я пришёл к выводу, что сильнее сразу контратаковать в центре после отвлечения ферзя» (Гуфельд). В бессмертной партии было сыграно 9…b5 — см. раздел «Партии целиком».", "20": "Атака белых на королевском фланге стратегически не обоснована и тактически запаздывает: чёрные успевают создать угрозы на другой стороне доски."}, "evals": {"20": "÷"}, "subs": {}, "isubs": {}, "off": false, "cp": [44, 32, 35, 42, 36, 47, 54, 51, 55, 39, 38, 39, 60, 57, 66, 64, 73, 53, 62, 50, 59], "line": "… 4...d6 5.f3 5...O-O 6.Be3 6...Nc6 7.Nge2 7...Rb8 8.Qd2 …"}, {"id": "z_e5", "chapter": "Система Земиша · 5.f3", "title": "6…e5 7.Nge2", "tag": "÷", "eval": "÷ классическая трактовка", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "f3", "O-O", "Be3", "e5", "Nge2", "c6"], "notes": {"12": "Первое время, в период стремления к классическим методам игры, ортодоксальным ответом считалось именно это.", "13": "План развития без закрытия центра.", "14": "На это чёрные чаще всего и отвечали, имея в виду организацию подрыва d6-d5."}, "evals": {"14": "÷"}, "subs": {}, "isubs": {}, "off": false, "cp": [47, 38, 39, 40, 53, 45, 61, 54, 63, 43, 44, 44, 88, 72, 87], "line": "… 4...d6 5.f3 5...O-O 6.Be3 6...e5 7.Nge2 7...c6"}, {"id": "z_d5", "chapter": "Система Земиша · 5.f3", "title": "6…e5 7.d5 — закрытый центр", "tag": "÷", "eval": "÷ игра на разных флангах", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "f3", "O-O", "Be3", "e5", "d5", "Nh5"], "notes": {"13": "Возникает закрытая пешечная структура, в которой белые под прикрытием клина c4-d5-e4 рокируют в длинную сторону — с видами на атаку королевского фланга надвижением пешек h и g.", "14": "Самый распространённый ответ: конь уходит с дороги, чтобы быстро провести f7-f5, что нивелирует планы белых на королевском фланге."}, "evals": {"14": "÷"}, "subs": {}, "isubs": {}, "off": false, "cp": [39, 38, 43, 43, 50, 51, 64, 59, 62, 36, 40, 35, 83, 85, 77], "line": "… 4...d6 5.f3 5...O-O 6.Be3 6...e5 7.d5 7...Nh5"}, {"id": "z_b6", "chapter": "Система Земиша · 5.f3", "title": "6…b6 — фианкетто на b7", "tag": "÷", "eval": "÷ давление по большой диагонали", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "f3", "O-O", "Be3", "b6", "Qd2", "Bb7"], "notes": {"12": "Один из методов, связанных с подготовкой фланговой атаки центра посредством c7-c5 — наряду с 6…Nbd7. Играли также 6…c6 и 6…a6, подготавливая b7-b5. «Но, на мой взгляд, вершиной староиндийской мысли стал ход 6…Nc6» (Гуфельд).", "14": "Оба слона нацелены на центр белых, дальше возможны c7-c5 или e7-e5."}, "evals": {"14": "÷"}, "subs": {}, "isubs": {}, "off": false, "cp": [50, 43, 42, 42, 52, 49, 65, 67, 66, 46, 41, 42, 59, 57, 114], "line": "… 4...d6 5.f3 5...O-O 6.Be3 6...b6 7.Qd2 7...Bb7"}, {"id": "z_bg5", "chapter": "Система Земиша · 5.f3", "title": "6.Bg5 Nc6", "tag": "÷", "eval": "÷ связка вместо Be3", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "f3", "O-O", "Bg5", "Nc6"], "notes": {"11": "Более поздняя добавка к системе: слон выходит активнее, но и сам становится объектом нападения.", "12": "Тот же план: давление на d4 и подготовка <a class=\"inl\" data-s=\"0\">a7-a6, b7-b5</a>."}, "evals": {"12": "÷"}, "subs": {}, "isubs": {"0": {"kind": "plan", "startFen": "r1bq1rk1/ppp1ppbp/2np1np1/6B1/2PPP3/2N2P2/PP4PP/R2QKBNR w KQ - 3 7", "plies": [{"san": "a6", "fen": "r1bq1rk1/1pp1ppbp/p1np1np1/6B1/2PPP3/2N2P2/PP4PP/R2QKBNR w KQ - 0 8", "from": "a7", "to": "a6", "num": "7…"}, {"san": "b5", "fen": "r1bq1rk1/2p1ppbp/p1np1np1/1p4B1/2PPP3/2N2P2/PP4PP/R2QKBNR w KQ - 0 9", "from": "b7", "to": "b5", "num": "8…"}]}}, "off": false, "cp": [44, 42, 42, 45, 52, 52, 66, 66, 65, 44, 40, 39, 41], "line": "… 4...d6 5.f3 5...O-O 6.Bg5 6...Nc6"}, {"id": "early_e5", "chapter": "Система Земиша · 5.f3", "title": "Провокация: 4…0-0 5.e5?! (Летелье — Фишер)", "tag": "∓", "eval": "∓ от центра белых остались руины", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "O-O", "e5", "Ne8", "f4", "d6", "Be3", "c5", "dxc5", "Nc6", "cxd6", "exd6", "Ne4", "Bf5"], "notes": {"8": "Восклицательный знак — авторская оценка. Ранняя рокировка носит провокационный характер: чёрные допускают 5.e5 и вызывают огонь на себя.", "9": "«Скороспелая атака несёт в себе не только положительный фактор, но и отрицательный: такое сильнодействующее средство — палка о двух концах, один из которых, со стороны чёрных, может оказаться тяжелее» (Гуфельд).", "10": "На это и был расчёт: пешка e5 остаётся без опоры.", "14": "Подрыв основания цепи.", "20": "«И от центра белых остались одни руины при нарастающей инициативе чёрных» — партия Летелье — Фишер, Олимпиада в Лейпциге 1960."}, "evals": {"20": "∓"}, "subs": {}, "isubs": {}, "off": false, "cp": [43, 44, 40, 39, 46, 47, 61, 66, 64, 23, 17, 15, 13, 14, 20, 8, 14, 3, 11, -91, -38], "line": "… 4...O-O 5.e5 5...Ne8 6.f4 6...d6 7.Be3 7...c5 8.dxc5 …"}, {"id": "univ_c5", "chapter": "Система Земиша · 5.f3", "title": "Универсальное 5…c5!? против Земиша", "tag": "÷", "eval": "÷ универсальное средство", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "O-O", "f3", "c5", "Nge2", "cxd4", "Nxd4", "Nc6", "Be3", "Qb6"], "notes": {"10": "«На любой ответ белых в качестве универсального средства можно предложить контрудар 5…c5». При попытке перейти в систему Земиша белые оказываются перед выбором: на 6.dxc5 перспективна жертва пешки 6…b6!, а при наиболее естественном ответе <a class=\"inl\" data-s=\"0\">6.d5 d6</a> возникает структура Модерн-Бенони.", "11": "Белые держат напряжение.", "16": "Ключевая позиция: теперь нехорошо 9.Qd2?! из-за 9…<a class=\"inl\" data-s=\"1\">Nxd4 10.Bxd4 Nxe4!</a> В случае 6.Be2 cxd4 7.Nxd4 Nc6 белые оказываются в сицилианской защите — варианте Мароци."}, "evals": {"16": "÷"}, "subs": {}, "isubs": {"0": {"kind": "line", "startFen": "rnbq1rk1/pp1pppbp/5np1/2p5/2PPP3/2N2P2/PP4PP/R1BQKBNR w KQ - 0 6", "plies": [{"san": "d5", "fen": "rnbq1rk1/pp1pppbp/5np1/2pP4/2P1P3/2N2P2/PP4PP/R1BQKBNR b KQ - 0 6", "from": "d4", "to": "d5", "num": "6."}, {"san": "d6", "fen": "rnbq1rk1/pp2ppbp/3p1np1/2pP4/2P1P3/2N2P2/PP4PP/R1BQKBNR w KQ - 0 7", "from": "d7", "to": "d6", "num": "6…"}]}, "1": {"kind": "line", "startFen": "r1bq1rk1/pp1pppbp/2n2np1/8/2PNP3/2N1BP2/PP4PP/R2QKB1R b KQ - 2 8", "plies": [{"san": "Nxd4", "fen": "r1bq1rk1/pp1pppbp/5np1/8/2PnP3/2N1BP2/PP4PP/R2QKB1R w KQ - 0 9", "from": "c6", "to": "d4", "num": "8…"}, {"san": "Bxd4", "fen": "r1bq1rk1/pp1pppbp/5np1/8/2PBP3/2N2P2/PP4PP/R2QKB1R b KQ - 0 9", "from": "e3", "to": "d4", "num": "9."}, {"san": "Nxe4", "fen": "r1bq1rk1/pp1pppbp/6p1/8/2PBn3/2N2P2/PP4PP/R2QKB1R w KQ - 0 10", "from": "f6", "to": "e4", "num": "9…"}]}}, "off": false, "cp": [42, 42, 42, 35, 40, 40, 68, 57, 53, 44, 56, 24, 45, 27, 33, 48, 88], "line": "… 4...O-O 5.f3 5...c5 6.Nge2 6...cxd4 7.Nxd4 7...Nc6 8.Be3 …"}, {"id": "k_main", "chapter": "Классическая система · 5.Nf3 0-0 6.Be2 e5", "title": "Главная позиция: 7.0-0 Nc6 8.d5 Ne7", "tag": "÷", "eval": "÷ основная позиция системы", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "Nf3", "O-O", "Be2", "e5", "O-O", "Nc6", "d5", "Ne7"], "notes": {"12": "Классическая система: пешке e4 противостоит пешка e5, и обе стороны без промедления развили королевский фланг.", "14": "«Согласно моей концепции создания контригры, на 7.0-0 лучшим ответом является 7…Nc6» (Гуфельд). Так конь наиболее эффективно воздействует на центр и вынуждает белых его закрыть.", "16": "Основная позиция системы, впервые встретившаяся в партии Тайманов — Аронин, 20-й чемпионат СССР, 1952. Крамник формулировал правило так: «когда два коня находятся в связке, например на d7 и f6, они менее поворотливы, а ферзевый конь на e7 смотрится лучше».", "15": "Белые вынуждены закрыть центр."}, "evals": {"16": "÷"}, "subs": {}, "isubs": {}, "off": false, "cp": [35, 44, 41, 41, 50, 48, 58, 60, 69, 63, 55, 50, 62, 50, 75, 67, 63], "line": "… 7.O-O 7...Nc6 8.d5 8...Ne7"}, {"id": "k_bayonet", "chapter": "Классическая система · 5.Nf3 0-0 6.Be2 e5", "title": "9.b4 — «байонет»", "tag": "÷", "eval": "÷ гонка на разных флангах", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "Nf3", "O-O", "Be2", "e5", "O-O", "Nc6", "d5", "Ne7", "b4", "Nh5", "g3", "f5", "exf5", "Nxf5", "Ne4", "Nf6", "Bg5"], "notes": {"17": "«Байонет-атака». Вариант, популярности которого немало способствовал Владимир Крамник: белые не тратят время на подготовку и сразу идут вперёд.", "18": "Активное продолжение, практически вынуждающее белых к ослаблению королевского фланга. Фишер предпочитал 9…Ne8 и после 10.Rc1 f5 успешно противодействовал атаке Тайманова на ферзевом фланге.", "19": "Белые препятствуют проникновению коня на f4. Другое основное продолжение — 10.Rc1.", "20": "Решительный ход, подкреплённый тактикой. При подрыве 10…c6?! белые опережают в развитии инициативы: 11.Rc1 f5 12.dxc6 bxc6 13.c5!", "22": "Чёрные не опасаются 12.g4? ввиду 12…Nd4! 13.gxh5 Nxe2+ 14.Qxe2 Bg4 — материал отыгрывается с прибылью.", "23": "Полезно занять центральный пункт с видами на g5."}, "evals": {"25": "÷"}, "subs": {}, "isubs": {}, "off": false, "cp": [41, 42, 40, 39, 48, 48, 64, 64, 64, 64, 64, 58, 58, 64, 68, 74, 79, 72, 73, 48, 44, -53, 32, 30, 32, 39], "line": "… 7.O-O 7...Nc6 8.d5 8...Ne7 9.b4 9...Nh5 10.g3 10...f5 …"}, {"id": "k_ne1", "chapter": "Классическая система · 5.Nf3 0-0 6.Be2 e5", "title": "9.Ne1 Nd7 10.Nd3", "tag": "÷", "eval": "÷ классический план белых", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "Nf3", "O-O", "Be2", "e5", "O-O", "Nc6", "d5", "Ne7", "Ne1", "Nd7", "Nd3", "f5", "f3", "f4"], "notes": {"17": "Классический план: конь идёт на d3, чтобы поддержать прорыв c4-c5 и держать под контролем поля b4 и f4.", "18": "Ответная перегруппировка: конь освобождает линию «f» и поддерживает e5.", "20": "Стандартный подрыв.", "22": "Пешка идёт вперёд, и дальше чёрные будут наступать g6-g5-g4."}, "evals": {"22": "÷"}, "subs": {}, "isubs": {}, "off": false, "cp": [39, 39, 39, 39, 48, 47, 58, 65, 67, 62, 61, 64, 65, 60, 71, 70, 72, 57, 57, 59, 64, 60, 77], "line": "… 7.O-O 7...Nc6 8.d5 8...Ne7 9.Ne1 9...Nd7 10.Nd3 10...f5 …"}, {"id": "k_nd2", "chapter": "Классическая система · 5.Nf3 0-0 6.Be2 e5", "title": "9.Nd2 — гибкий ход", "tag": "÷", "eval": "÷ три ответа у чёрных", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "Nf3", "O-O", "Be2", "e5", "O-O", "Nc6", "d5", "Ne7", "Nd2", "c5"], "notes": {"17": "Белые освобождают дорогу пешке f и готовят b2-b4 или c4-c5.", "18": "Один из трёх основных планов наряду с 9…c6 и 9…a5: чёрные закрывают ферзевый фланг и переключаются на королевский."}, "evals": {"18": "÷"}, "subs": {}, "isubs": {}, "off": false, "cp": [34, 43, 45, 39, 47, 47, 61, 58, 59, 60, 60, 64, 59, 65, 75, 73, 69, 33, 53], "line": "… 7.O-O 7...Nc6 8.d5 8...Ne7 9.Nd2 9...c5"}, {"id": "k_bd2", "chapter": "Классическая система · 5.Nf3 0-0 6.Be2 e5", "title": "9.Bd2 Nh5 10.g3", "tag": "÷", "eval": "÷ обоюдоострая игра", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "Nf3", "O-O", "Be2", "e5", "O-O", "Nc6", "d5", "Ne7", "Bd2", "Nh5", "g3", "f5"], "notes": {"17": "Скромный ход: слон освобождает поле c1 для ладьи и заранее прикрывает ферзевый фланг.", "20": "План чёрных всегда один и тот же — штурм на королевском фланге."}, "evals": {"20": "÷"}, "subs": {}, "isubs": {}, "off": false, "cp": [42, 39, 43, 45, 47, 44, 60, 60, 65, 61, 61, 61, 65, 63, 69, 75, 75, 45, 63, 36, 28], "line": "… 7.O-O 7...Nc6 8.d5 8...Ne7 9.Bd2 9...Nh5 10.g3 10...f5"}, {"id": "k_d5", "chapter": "Классическая система · 5.Nf3 0-0 6.Be2 e5", "title": "7.d5 Nbd7 8.Bg5 Nc5", "tag": "÷", "eval": "÷ разносторонние рокировки", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "Nf3", "O-O", "Be2", "e5", "d5", "Nbd7", "Bg5", "Nc5", "Qc2", "a5", "O-O-O"], "notes": {"13": "Белые препятствуют выводу коня на c6 радикально. Закрытием центра они определяют дальнейший курс боевых действий: пешечная структура смотрится идеально для атаки на ферзевом фланге. Однако при столь ранней стабилизации центра чёрные получают возможность организовать контригру на противоположной стороне доски — «раннее надвижение белой пешки d может рассматриваться как определённое достижение для чёрных».", "14": "Чёрные временно используют пункт c5 для коня, чтобы препятствовать атаке белых на ферзевом фланге, и подготавливают свой традиционный прорыв f7-f5.", "18": "Захват пространства: конь c5 закрепляется, ведь b2-b4 теперь не сыграть.", "19": "Разносторонние рокировки — сигнал к обоюдному штурму."}, "evals": {"19": "÷"}, "subs": {}, "isubs": {}, "off": false, "cp": [41, 39, 43, 44, 43, 36, 63, 63, 63, 68, 65, 64, 65, 38, 68, 10, 85, 60, 61, 19], "line": "… 7.d5 7...Nbd7 8.Bg5 8...Nc5 9.Qc2 9...a5 10.O-O-O"}, {"id": "k_d5h6", "chapter": "Классическая система · 5.Nf3 0-0 6.Be2 e5", "title": "7.d5 Nbd7 8.Bg5 h6 9.Bh4 g5", "tag": "÷", "eval": "÷ радикальное решение", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "Nf3", "O-O", "Be2", "e5", "d5", "Nbd7", "Bg5", "h6", "Bh4", "g5", "Bg3", "Nh5"], "notes": {"16": "Сначала вопрос слону.", "18": "Радикально: чёрные ослабляют собственного короля, но выигрывают темп и запирают слона.", "20": "Слон g3 обречён на размен, а конь идёт на f4."}, "evals": {"20": "÷"}, "subs": {}, "isubs": {}, "off": false, "cp": [35, 42, 43, 42, 49, 42, 63, 69, 66, 66, 69, 67, 67, 51, 57, 17, 10, 8, -3, -4, 0], "line": "… 7.d5 7...Nbd7 8.Bg5 8...h6 9.Bh4 9...g5 10.Bg3 10...Nh5"}, {"id": "k_a5", "chapter": "Классическая система · 5.Nf3 0-0 6.Be2 e5", "title": "7.d5 a5 8.Bg5 h6 9.Bh4 Na6", "tag": "÷", "eval": "÷ конь через a6", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "Nf3", "O-O", "Be2", "e5", "d5", "a5", "Bg5", "h6", "Bh4", "Na6", "O-O", "Qe8"], "notes": {"14": "Сначала фиксируем ферзевый фланг: поле c5 достанется коню.", "18": "Конь идёт на край доски, чтобы попасть на c5.", "20": "Ферзь освобождает поле d8 для ладьи и поддерживает подрыв f7-f5."}, "evals": {"20": "÷"}, "subs": {}, "isubs": {}, "off": false, "cp": [42, 34, 47, 42, 43, 43, 67, 59, 69, 67, 66, 63, 65, 50, 52, 48, 47, 45, 38, -10, 23], "line": "… 7.d5 7...a5 8.Bg5 8...h6 9.Bh4 9...Na6 10.O-O 10...Qe8"}, {"id": "k_be3", "chapter": "Классическая система · 5.Nf3 0-0 6.Be2 e5", "title": "7.Be3 Ng4 8.Bg5 f6", "tag": "÷", "eval": "÷ косвенно против Nc6", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "Nf3", "O-O", "Be2", "e5", "Be3", "Ng4", "Bg5", "f6", "Bc1", "Nc6"], "notes": {"13": "Экономя темп на рокировке, белые в некоторой степени нивелируют ход 7…Nc6: теперь при 8.d5 Ne7 они успевают провести полезный манёвр 9.Nd2 при слоне на e3 и опережают в развитии инициативы.", "14": "Однако наличие слона на e3 всё же позволяет чёрным реализовать тему Nb8-c6 — после предварительного оттеснения слона.", "16": "Слона гонят обратно, и белые теряют время.", "18": "Всё-таки конь попадает на c6, ради чего и была затеяна операция. При отступлении 9.Bh4 сделать это сложнее."}, "evals": {"18": "÷"}, "subs": {}, "isubs": {}, "off": false, "cp": [36, 33, 43, 43, 40, 43, 61, 60, 69, 72, 72, 70, 70, 48, 59, 56, 62, 31, 41], "line": "… 7.Be3 7...Ng4 8.Bg5 8...f6 9.Bc1 9...Nc6"}, {"id": "k_be3ed", "chapter": "Классическая система · 5.Nf3 0-0 6.Be2 e5", "title": "7.Be3 exd4 — репертуар Накамуры", "tag": "=", "eval": "= чёрные поддерживают равновесие", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "Nf3", "O-O", "Be2", "e5", "Be3", "exd4", "Nxd4", "Re8", "f3", "c6", "Bf2", "d5", "exd5", "cxd5", "O-O", "Nc6"], "notes": {"14": "В дебютном репертуаре Накамуры контригра в центре: чёрные не закрывают позицию, а сразу вскрывают её.", "18": "Подготовка главного удара.", "20": "Вот он. Центр вскрывается, и фигуры чёрных получают простор.", "24": "«Чёрные поддерживают равновесие» — вывод книги по этой линии."}, "evals": {"24": "="}, "subs": {}, "isubs": {}, "off": false, "cp": [49, 35, 43, 40, 43, 42, 72, 67, 68, 71, 71, 71, 69, 62, 51, 43, 39, 39, 40, 34, 46, 41, 42, 39, 35], "line": "… 7.Be3 7...exd4 8.Nxd4 8...Re8 9.f3 9...c6 10.Bf2 10...d5 …"}, {"id": "a_c5", "chapter": "Система Авербаха · 5.Be2 0-0 6.Bg5", "title": "6…c5 7.d5 e6 — на стыке с Бенони", "tag": "÷", "eval": "÷ модерн-Бенони", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "Be2", "O-O", "Bg5", "c5", "d5", "e6", "dxe6", "Bxe6", "Nf3", "Nc6", "O-O", "Nd4"], "notes": {"11": "Система Авербаха, впервые применённая в 1954 году. Основная цель расстановки слонов в таком порядке — помешать контригре чёрных, связанной с ходами e7-e5 и f7-f5. «Есть варианты-созидатели и варианты-разрушители. В число последних входит система Авербаха, в которой белые действуют по поговорке: сам не гам и другому не дам» (Гуфельд).", "12": "Наиболее активные планы игры чёрных связаны именно с этим подрывом.", "14": "С дальнейшим разменом на d5 игра идёт на стыке с системой Модерн-Бенони.", "15": "Белым это невыгодно.", "20": "С идеей <a class=\"inl\" data-s=\"0\">11.Nxd4? cxd4 12.Qxd4 Nxe4!</a> — у чёрных отличная игра."}, "evals": {"20": "÷"}, "subs": {}, "isubs": {"0": {"kind": "line", "startFen": "r2q1rk1/pp3pbp/3pbnp1/2p3B1/2PnP3/2N2N2/PP2BPPP/R2Q1RK1 w - - 4 11", "plies": [{"san": "Nxd4", "fen": "r2q1rk1/pp3pbp/3pbnp1/2p3B1/2PNP3/2N5/PP2BPPP/R2Q1RK1 b - - 0 11", "from": "f3", "to": "d4", "num": "11."}, {"san": "cxd4", "fen": "r2q1rk1/pp3pbp/3pbnp1/6B1/2PpP3/2N5/PP2BPPP/R2Q1RK1 w - - 0 12", "from": "c5", "to": "d4", "num": "11…"}, {"san": "Qxd4", "fen": "r2q1rk1/pp3pbp/3pbnp1/6B1/2PQP3/2N5/PP2BPPP/R4RK1 b - - 0 12", "from": "d1", "to": "d4", "num": "12."}, {"san": "Nxe4", "fen": "r2q1rk1/pp3pbp/3pb1p1/6B1/2PQn3/2N5/PP2BPPP/R4RK1 w - - 0 13", "from": "f6", "to": "e4", "num": "12…"}]}}, "off": false, "cp": [36, 33, 42, 42, 50, 45, 69, 69, 65, 70, 70, 47, 50, 36, 41, 28, 27, 25, 21, 24, 28], "line": "… 6...c5 7.d5 7...e6 8.dxe6 8...Bxe6 9.Nf3 9...Nc6 10.O-O …"}, {"id": "a_h6", "chapter": "Система Авербаха · 5.Be2 0-0 6.Bg5", "title": "6…h6 7.Be3 c5 — сначала вопрос слону", "tag": "÷", "eval": "÷ обычный путь", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "Be2", "O-O", "Bg5", "h6", "Be3", "c5", "d5", "e6", "Qd2", "Kh7"], "notes": {"12": "Но обычно чёрные предварительно оттесняют слона — и только потом бьют по центру.", "14": "И только теперь бьют по центру — с выигранным темпом по сравнению с немедленным 6…c5.", "18": "Полезная профилактика: король уходит с диагонали и освобождает g8."}, "evals": {"18": "÷"}, "subs": {}, "isubs": {}, "off": false, "cp": [32, 40, 45, 41, 50, 50, 70, 67, 69, 69, 65, 38, 51, 39, 41, 38, 40, 34, 46], "line": "… 6...h6 7.Be3 7...c5 8.d5 8...e6 9.Qd2 9...Kh7"}, {"id": "a_e5", "chapter": "Система Авербаха · 5.Be2 0-0 6.Bg5", "title": "6…Nbd7 7.Qd2 e5 — под связкой", "tag": "÷", "eval": "÷ надёжно, но непросто", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "Be2", "O-O", "Bg5", "Nbd7", "Qd2", "e5", "d5", "Nc5", "f3", "a5"], "notes": {"12": "План с ходом e7-e5, который Гуфельд не раз испытывал против Полугаевского.", "14": "«Хотя «Энциклопедия» считает его вполне надёжным, по своему опыту знаю, что непросто играть под связкой слона g5» (Гуфельд).", "16": "Конь занимает форпост и давит на e4.", "18": "Закрепляем коня — b2-b4 теперь не провести."}, "evals": {"18": "÷"}, "subs": {}, "isubs": {}, "off": false, "cp": [41, 32, 41, 42, 49, 43, 68, 68, 71, 71, 72, 36, 86, 76, 70, 78, 72, 81, 107], "line": "… 6...Nbd7 7.Qd2 7...e5 8.d5 8...Nc5 9.f3 9...a5"}, {"id": "a_dxc5", "chapter": "Система Авербаха · 5.Be2 0-0 6.Bg5", "title": "6…c5 7.dxc5 — размен", "tag": "=", "eval": "= упрощения", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "Be2", "O-O", "Bg5", "c5", "dxc5", "dxc5", "Qxd8", "Rxd8"], "notes": {"13": "Прямолинейный размен ведёт к раннему эндшпилю.", "16": "Ферзей нет, но позиция далеко не мертва: у чёрных пара слонов и игра по линии «d»."}, "evals": {"16": "="}, "subs": {}, "isubs": {}, "off": false, "cp": [32, 34, 41, 41, 42, 43, 72, 72, 73, 73, 70, 29, 29, -14, -7, -39, -34], "line": "… 6...c5 7.dxc5 7...dxc5 8.Qxd8 8...Rxd8"}, {"id": "f_nc6", "chapter": "Фианкетто слона · 3.g3", "title": "Фианкетто: 6…Nc6! 7.Nc3 e5", "tag": "÷", "eval": "÷ конь берёт быка за рога", "moves": ["d4", "Nf6", "c4", "g6", "g3", "Bg7", "Bg2", "O-O", "Nf3", "d6", "O-O", "Nc6", "Nc3", "e5", "d5", "Ne7", "c5", "e4"], "notes": {"5": "Фианкеттируя слона, белые берут под прицел ферзевый фланг, контролируют поля e4 и d5 и надёжно укрепляют позицию короля. Одна из самых многоплановых и опасных для чёрных систем.", "12": "«Универсальный ход — восклицательный знак моя оценка», когда конь атакует пункт d4. Иными словами, конь сразу берёт быка за рога.", "14": "Поскольку белые оставляют чёрным выбор плана дальнейшей игры, выпад пешки e является наиболее последовательным путём атаки пункта d4.", "16": "На принципиальный ответ 8.d5 чёрные обычно отступают именно так. К позиции из югославского варианта ведёт 8…<a class=\"inl\" data-s=\"0\">Na5 9.Nd2 c5</a>.", "18": "Надвижение c4-c5 диктуется пешечной структурой, где у белых, по терминологии Нимцовича, «качественное пешечное превосходство» на ферзевом фланге. Вопрос лишь в том, не лучше ли сначала укрепить центр путём 9.e4 — в наше время это стало основным продолжением белых."}, "evals": {"18": "÷"}, "subs": {}, "isubs": {"0": {"kind": "line", "startFen": "r1bq1rk1/ppp2pbp/2np1np1/3Pp3/2P5/2N2NP1/PP2PPBP/R1BQ1RK1 b - - 0 8", "plies": [{"san": "Na5", "fen": "r1bq1rk1/ppp2pbp/3p1np1/n2Pp3/2P5/2N2NP1/PP2PPBP/R1BQ1RK1 w - - 1 9", "from": "c6", "to": "a5", "num": "8…"}, {"san": "Nd2", "fen": "r1bq1rk1/ppp2pbp/3p1np1/n2Pp3/2P5/2N3P1/PP1NPPBP/R1BQ1RK1 b - - 2 9", "from": "f3", "to": "d2", "num": "9."}, {"san": "c5", "fen": "r1bq1rk1/pp3pbp/3p1np1/n1pPp3/2P5/2N3P1/PP1NPPBP/R1BQ1RK1 w - c6 0 10", "from": "c7", "to": "c5", "num": "9…"}]}}, "off": false, "cp": [42, 36, 38, 38, 43, 20, 45, 42, 55, 26, 64, 44, 47, 39, 40, 48, 50, 19, 21], "line": "… 3.g3 3...Bg7 4.Bg2 4...O-O 5.Nf3 5...d6 6.O-O 6...Nc6 …"}, {"id": "f_bf5", "chapter": "Фианкетто слона · 3.g3", "title": "7…Bf5 — контроль над e4", "tag": "÷", "eval": "÷ борьба за поле e4", "moves": ["d4", "Nf6", "c4", "g6", "g3", "Bg7", "Bg2", "O-O", "Nf3", "d6", "O-O", "Nc6", "Nc3", "Bf5", "d5", "Na5", "Nd2", "c5"], "notes": {"5": "Фианкеттируя слона, белые берут под прицел ферзевый фланг, контролируют поля e4 и d5 и надёжно укрепляют позицию короля — одна из самых многоплановых и опасных для чёрных систем.", "14": "Контроль над пунктом e4 — так называется эта линия в книге.", "16": "Чёрные не опасаются за будущее коня после 7.d5, так как после Nbd2 и c7-c5 он участвует в контригре на ферзевом фланге."}, "evals": {"18": "÷"}, "subs": {}, "isubs": {}, "off": false, "cp": [47, 35, 43, 43, 43, 25, 42, 44, 44, 27, 42, 39, 43, 47, 66, 55, 56, 52, 58], "line": "… 3.g3 3...Bg7 4.Bg2 4...O-O 5.Nf3 5...d6 6.O-O 6...Nc6 …"}, {"id": "f_a6", "chapter": "Фианкетто слона · 3.g3", "title": "7…a6 — фланговая атака", "tag": "÷", "eval": "÷ игра на ферзевом фланге", "moves": ["d4", "Nf6", "c4", "g6", "g3", "Bg7", "Bg2", "O-O", "Nf3", "d6", "O-O", "Nc6", "Nc3", "a6", "d5", "Na5", "Nd2", "c5", "Qc2", "Rb8"], "notes": {"14": "Продолжение, известное в теории как <b>система Панно</b>: цель — подготовка пешечной фланговой атаки b7-b5. После перевода ладьи на b8 воздействие слона g2 на ферзевый фланг несущественно.", "15": "Белые применяют два основных метода: закрытие центра, как здесь, либо отказ от d4-d5 со стремлением сохранить подвижный пешечный центр. Во втором случае для подготовки e2-e4 им необходимо ходом h2-h3 предотвратить выпад Bc8-g4, усиливающий воздействие на пункт d4.", "20": "Всё готово к подрыву b7-b5."}, "evals": {"20": "÷"}, "subs": {}, "isubs": {}, "off": false, "cp": [43, 35, 43, 43, 43, 24, 38, 37, 38, 25, 57, 44, 46, 46, 53, 33, 40, 54, 50, 34, 52], "line": "… 3.g3 3...Bg7 4.Bg2 4...O-O 5.Nf3 5...d6 6.O-O 6...Nc6 …"}, {"id": "f_yugo", "chapter": "Фианкетто слона · 3.g3", "title": "Югославский вариант 6…c5", "tag": "÷", "eval": "÷ удар по центру с другой стороны", "moves": ["d4", "Nf6", "c4", "g6", "Nf3", "Bg7", "g3", "O-O", "Bg2", "d6", "O-O", "c5", "Nc3", "Nc6", "d5", "Na5", "Nd2", "a6", "Qc2", "Rb8"], "notes": {"12": "Атака центра, получившая название югославского варианта — благодаря усилиям югославских шахматистов в 50-е годы. Такой порядок ходов, когда пешечный подрыв предшествует развитию коня, «можно рекомендовать наравне с 6…Nc6».", "16": "По идейному содержанию — воздействию на пункт d4 — это та же тема, что и в варианте с 6…Nc6.", "20": "Чёрные на время оставляют дома пешку e7 и наносят удар по центру с другой стороны, увеличивая диапазон слона g7."}, "evals": {"20": "÷"}, "subs": {}, "isubs": {}, "off": false, "cp": [45, 43, 43, 43, 43, 43, 43, 25, 25, 24, 46, 48, 44, 35, 42, 41, 49, 41, 49, 45, 44], "line": "… 3.Nf3 3...Bg7 4.g3 4...O-O 5.Bg2 5...d6 6.O-O 6...c5 …"}, {"id": "p4_e6", "chapter": "Вариант четырёх пешек · 5.f4", "title": "Четыре пешки: 7…e6 8.Be2 exd5", "tag": "÷", "eval": "÷ структура Бенони", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "f4", "O-O", "Nf3", "c5", "d5", "e6", "Be2", "exd5", "cxd5", "Bg4", "O-O", "Nbd7"], "notes": {"9": "Вариант четырёх пешек — самая амбициозная попытка: белые занимают весь центр.", "12": "Немедленный удар по основанию цепи.", "14": "Вскрытие линий, пока белые не закончили развитие.", "17": "Получилась структура Бенони с пешкой f4 — обоюдоострая позиция.", "20": "Фигуры чёрных выходят с темпами, и пешечная громада белых может стать обузой."}, "evals": {"20": "÷"}, "subs": {}, "isubs": {}, "off": false, "cp": [43, 43, 43, 43, 43, 43, 61, 69, 65, 36, 42, 43, 39, 31, 32, 29, 31, 28, 41, 57, 55], "line": "… 7...e6 8.Be2 8...exd5 9.cxd5 9...Bg4 10.O-O 10...Nbd7"}, {"id": "p4_b5", "chapter": "Вариант четырёх пешек · 5.f4", "title": "7…b5!? — гамбит", "tag": "÷", "eval": "÷ гамбитная контригра", "moves": ["d4", "Nf6", "c4", "g6", "Nc3", "Bg7", "e4", "d6", "f4", "O-O", "Nf3", "c5", "d5", "b5", "cxb5", "a6", "bxa6", "Qa5", "Bd2", "Bxa6"], "notes": {"14": "Гамбитная идея в духе волжского гамбита: чёрные отдают пешку за вскрытие линий на ферзевом фланге.", "20": "За пешку у чёрных давление по линиям «a» и «b» и отличная игра для обоих слонов."}, "evals": {"20": "÷"}, "subs": {}, "isubs": {}, "off": false, "cp": [43, 43, 43, 43, 41, 42, 71, 70, 72, 26, 25, 26, 23, 31, 104, 60, 67, 35, 42, 34, 38], "line": "… 7...b5 8.cxb5 8...a6 9.bxa6 9...Qa5 10.Bd2 10...Bxa6"}, {"id": "game_immortal", "chapter": "Партии целиком · с комментариями", "title": "«Бессмертная»: Багиров — Гуфельд, Кировабад 1973", "tag": "0-1", "eval": "0-1 мат объявлен не позднее восьмого хода", "moves": ["d4", "g6", "c4", "Bg7", "Nc3", "d6", "e4", "Nf6", "f3", "O-O", "Be3", "Nc6", "Nge2", "Rb8", "Qd2", "a6", "Bh6", "b5", "h4", "e5", "Bxg7", "Kxg7", "h5", "Kh8", "Nd5", "bxc4", "hxg6", "fxg6", "Qh6", "Nh5", "g4", "Rxb2", "gxh5", "g5", "Rg1", "g4", "O-O-O", "Rxa2", "Nef4", "exf4", "Nxf4", "Rxf4", "Qxf4", "c3", "Bc4", "Ra3", "fxg4", "Nb4", "Kb1", "Be6", "Bxe6", "Nd3", "Qf7", "Qb8+", "Bb3", "Rxb3+", "Kc2", "Nb4+", "Kxb3", "Nd5+", "Kc2", "Qb2+", "Kd3", "Qb5+"], "notes": {"2": "«Каждый человек рождается с предпосылками гениальности. Но реализуются они у единиц… Мне тоже повезло: если во мне и есть шахматный гений, то он проснулся именно в тот вечер, когда я играл с Владимиром Багировым» (Гуфельд).", "12": "Тот самый главный вариант. «Именно этот ход служил мне верой и правдой на протяжении всей моей шахматной жизни, такое постоянство было вознаграждено Провидением».", "17": "Багиров смеётся: «Стоит разменять слона g7, и Гуфельд обезоружен!»", "18": "«В дальнейшем я пришёл к выводу, что сильнее сразу контратаковать в центре после отвлечения ферзя — 9…<a class=\"inl\" data-s=\"0\">Bxh6 10.Qxh6 e5</a>».", "24": "Принятие жертвы 12…<a class=\"inl\" data-s=\"1\">Nxh5 13.g4 Nf4 14.Nxf4 exf4 15.cxb5</a> вело к проигрышной позиции. Геллер считал отвод короля неудачным, но Гуфельд отстоял свою оценку — и 15 лет спустя Геллер снял вопросительный знак к этому ходу.", "25": "«Правильная стратегия. Грозит <a class=\"inl\" data-s=\"2\">14.Nxf6 и 15.d5</a>, после чего атака будет развиваться сама собой. А в подобных ситуациях промедление смерти подобно».", "26": "«Чтобы оправдать предшествующую игру, приходится допустить атаку соперника. Но белым ещё нужно подвести ладью a1. Против этого и направлена контригра на ферзевом фланге».", "29": "«Теперь спокойной жизни не жди. Но кто бы не сделал столь грозный выпад? Кажется невероятным, что именно этот ход выпускает то минимальное преимущество, которое положено иметь белым в дебюте».", "30": "«Единственный, но вполне достаточный аргумент».", "32": "«Намечаются жертвы. Пока это не контратака, а лишь контригра, отвлекающая внимание белых».", "36": "«Обстановка накалилась до предела. Белый король тоже оказался под огнём».", "40": "Второй восклицательный знак — за ход белых. «Это моя и, надеюсь, всех любителей шахмат благодарность Багирову за его соавторство в создании шахматного шедевра».", "44": "«Пример того, как знание общих принципов и приёмов облегчает расчёт вариантов. Пешка c3 остаётся штыком, приставленным к горлу белого короля».", "46": "«<b>Самый трудный ход в партии, а быть может, и в моей жизни!</b>» Напрашивалось 23…Ra4, но после спокойного 24.Bb3! наступление захлёбывалось.", "50": "«Перебирая дальнейшие варианты, я вдруг почувствовал, что фигуры на доске мелькают, как в калейдоскопе. Одна фигура уступает место другой, ей на смену приходит третья — и так вплоть до создания заключительной картины».", "52": "«Чтобы открыть дорогу ферзю на решающую магистраль b8-b1, чёрные каждым ходом жертвуют по фигуре».", "58": "«Единственный решающий ход».", "64": "<b>Белые сдались</b> ввиду <a class=\"inl\" data-s=\"3\">33.Kc2 Qe2+ 34.Kb3 Qb2+ 35.Kc4 Qb5#</a>.<br><br>«Каждый художник мечтает создать свою Джоконду, каждый шахматист — сыграть свою бессмертную партию. Ни одна партия не принесла мне такого удовлетворения, как эта»."}, "evals": {"64": "0-1"}, "subs": {}, "isubs": {"0": {"kind": "line", "startFen": "1rbq1rk1/1pp1ppbp/p1np1npB/8/2PPP3/2N2P2/PP1QN1PP/R3KB1R b KQ - 1 9", "plies": [{"san": "Bxh6", "fen": "1rbq1rk1/1pp1pp1p/p1np1npb/8/2PPP3/2N2P2/PP1QN1PP/R3KB1R w KQ - 0 10", "from": "g7", "to": "h6", "num": "9…"}, {"san": "Qxh6", "fen": "1rbq1rk1/1pp1pp1p/p1np1npQ/8/2PPP3/2N2P2/PP2N1PP/R3KB1R b KQ - 0 10", "from": "d2", "to": "h6", "num": "10."}, {"san": "e5", "fen": "1rbq1rk1/1pp2p1p/p1np1npQ/4p3/2PPP3/2N2P2/PP2N1PP/R3KB1R w KQ - 0 11", "from": "e7", "to": "e5", "num": "10…"}]}, "1": {"kind": "line", "startFen": "1rbq1r2/2p2pkp/p1np1np1/1p2p2P/2PPP3/2N2P2/PP1QN1P1/R3KB1R b KQ - 0 12", "plies": [{"san": "Nxh5", "fen": "1rbq1r2/2p2pkp/p1np2p1/1p2p2n/2PPP3/2N2P2/PP1QN1P1/R3KB1R w KQ - 0 13", "from": "f6", "to": "h5", "num": "12…"}, {"san": "g4", "fen": "1rbq1r2/2p2pkp/p1np2p1/1p2p2n/2PPP1P1/2N2P2/PP1QN3/R3KB1R b KQ - 0 13", "from": "g2", "to": "g4", "num": "13."}, {"san": "Nf4", "fen": "1rbq1r2/2p2pkp/p1np2p1/1p2p3/2PPPnP1/2N2P2/PP1QN3/R3KB1R w KQ - 1 14", "from": "h5", "to": "f4", "num": "13…"}, {"san": "Nxf4", "fen": "1rbq1r2/2p2pkp/p1np2p1/1p2p3/2PPPNP1/2N2P2/PP1Q4/R3KB1R b KQ - 0 14", "from": "e2", "to": "f4", "num": "14."}, {"san": "exf4", "fen": "1rbq1r2/2p2pkp/p1np2p1/1p6/2PPPpP1/2N2P2/PP1Q4/R3KB1R w KQ - 0 15", "from": "e5", "to": "f4", "num": "14…"}, {"san": "cxb5", "fen": "1rbq1r2/2p2pkp/p1np2p1/1P6/3PPpP1/2N2P2/PP1Q4/R3KB1R b KQ - 0 15", "from": "c4", "to": "b5", "num": "15."}]}, "2": {"kind": "line", "startFen": "1rbq1r1k/2p2p1p/p1np1np1/3Np2P/2pPP3/5P2/PP1QN1P1/R3KB1R w KQ - 0 14", "plies": [{"san": "Nxf6", "fen": "1rbq1r1k/2p2p1p/p1np1Np1/4p2P/2pPP3/5P2/PP1QN1P1/R3KB1R b KQ - 0 14", "from": "d5", "to": "f6", "num": "14."}, {"san": "d5", "fen": "1rbq1r1k/2p2p1p/p1n2Np1/3pp2P/2pPP3/5P2/PP1QN1P1/R3KB1R w KQ - 0 15", "from": "d6", "to": "d5", "num": "14…"}]}, "3": {"kind": "line", "startFen": "7k/2p2Q1p/p2p4/1q1n3P/3PP1P1/2pK4/8/3R2R1 w - - 5 33", "plies": [{"san": "Kc2", "fen": "7k/2p2Q1p/p2p4/1q1n3P/3PP1P1/2p5/2K5/3R2R1 b - - 6 33", "from": "d3", "to": "c2", "num": "33."}, {"san": "Qe2+", "fen": "7k/2p2Q1p/p2p4/3n3P/3PP1P1/2p5/2K1q3/3R2R1 w - - 7 34", "from": "b5", "to": "e2", "num": "33…"}, {"san": "Kb3", "fen": "7k/2p2Q1p/p2p4/3n3P/3PP1P1/1Kp5/4q3/3R2R1 b - - 8 34", "from": "c2", "to": "b3", "num": "34."}, {"san": "Qb2+", "fen": "7k/2p2Q1p/p2p4/3n3P/3PP1P1/1Kp5/1q6/3R2R1 w - - 9 35", "from": "e2", "to": "b2", "num": "34…"}, {"san": "Kc4", "fen": "7k/2p2Q1p/p2p4/3n3P/2KPP1P1/2p5/1q6/3R2R1 b - - 10 35", "from": "b3", "to": "c4", "num": "35."}, {"san": "Qb5#", "fen": "7k/2p2Q1p/p2p4/1q1n3P/2KPP1P1/2p5/8/3R2R1 w - - 11 36", "from": "b2", "to": "b5", "num": "35…"}]}}, "off": true, "cp": [42, 40, 65, 42, 48, 54, 52, 55, 60, 43, 46, 37, 52, 63, 65, 62, 66, 56, 50, 42, 65, 81, 77, 78, 81, 44, 38, 33, 114, 135, 131, 63, 23, 52, 65, 8, 0, 41, 23, -2, 14, -53, -225, -242, -260, -311, -234, -345, -367, -457, -541, -569, -557, -9989, -9990, -9990, -9991, -9991, -9992, -9993, -9994, -9994, -9995, -9995, -9996], "line": "… "}]}];      /* [{id, short, h1, eyebrow, sub, credit, vars:[...]}] */
 const ChessCls = (typeof Chess !== "undefined") ? Chess : module.exports.Chess;
 const $id = id => document.getElementById(id);
 
@@ -2257,6 +2328,7 @@ let bi = 0, vi = 0, pi = 0;
 let VARS = BOOKS[0].vars;             /* варианты текущей книги */
 let sub = null;
 let expl = null;                      /* режим проводника: свободные ходы по доске */
+let tr   = null;                      /* режим тренажёра: разыгрывание варианта за чёрных */
 
 /* индекс всех позиций всех книг: ключ = FEN без счётчиков, перестановки ходов ловятся автоматически */
 const KEY = f => f.split(" ").slice(0,4).join(" ");
@@ -2306,9 +2378,14 @@ BOOKS.forEach((bk,b)=>bk.vars.forEach((v,k)=>{
 const board = Chessboard("board", {
   position:"start", orientation:"black", showNotation:true, draggable:true,
   dropOffBoard:"snapback",
-  /* тянуть фигуры можно только в проводнике и только пока партия не кончилась */
-  onDragStart: () => !!expl && !expl.g.isGameOver(),
+  /* в проводнике тянем что угодно, в тренажёре — только чёрные и только в свой ход */
+  onDragStart: (src, piece) => {
+    if(expl) return !expl.g.isGameOver();
+    if(tr)   return !tr.done && !tr.wait && tr.g.turn() === "b" && piece[0] === "b";
+    return false;
+  },
   onDrop: (from, to) => {
+    if(tr) return trDrop(from, to);
     if(!expl) return "snapback";
     /* chess.js 1.0-beta бросает исключение на нелегальном ходе. Без catch оно вылетает
        из обработчика chessboard.js, тот не успевает вернуть фигуру — и доска
@@ -2321,7 +2398,7 @@ const board = Chessboard("board", {
   },
   /* после анимации приводим доску к состоянию партии: рокировка, взятие на проходе
      и превращение двигают не только перетащенную фигуру */
-  onSnapEnd: () => { if(expl) board.position(expl.g.fen(), false); },
+  onSnapEnd: () => { const g = expl ? expl.g : tr ? tr.g : null; if(g) board.position(g.fen(), false); },
   pieceTheme: p => PIECES[p], moveSpeed:190, appearSpeed:140, trashSpeed:120
 });
 let lastW = 0;
@@ -2342,10 +2419,12 @@ function buildOpts(){
     const b=document.createElement("button");
     b.className="opt"; b.dataset.i=i;
     const bad=/−|\+−|µ/.test(v.eval);
+    const bd=badgeOf(statOf(bi,v));
     b.innerHTML=`<span class="row1"><span class="t">${v.title}</span>`+
+                (bd.c ? `<span class="sbdg ${bd.c}" title="тренировка: ${bd.t}">${bd.t[0]}</span>` : "")+
                 `<span class="e${bad?" bad":""}">${v.tag}</span></span>`+
                 `<span class="mv">${v.line}</span>`;
-    b.onclick=()=>{ sub=null; vi=i; pi=0; closeModal(); render(); };
+    b.onclick=()=>{ if(tr) closeTrainer(); sub=null; vi=i; pi=0; closeModal(); render(); };
     box.appendChild(b);
   });
 }
@@ -2365,6 +2444,7 @@ function buildOpts(){
 
 function setBook(i){
   if(expl) closeExpl();
+  if(tr) closeTrainer();
   bi = i; VARS = BOOKS[bi].vars; vi = 0; pi = 0; sub = null;
   paintBook(); buildOpts(); render();
 }
@@ -2394,7 +2474,7 @@ $id("note").addEventListener("click", e=>{
   render();
 });
 $id("picker").onclick=openModal;
-function goVar(d){ if(expl) toggleExpl(); sub=null; vi=(vi+d+VARS.length)%VARS.length; pi=0; render(); }
+function goVar(d){ if(expl) toggleExpl(); if(tr) closeTrainer(); sub=null; vi=(vi+d+VARS.length)%VARS.length; pi=0; render(); }
 $id("prevvar").onclick=()=>goVar(-1);
 $id("nextvar").onclick=()=>goVar(1);
 $id("close").onclick=closeModal;
@@ -2404,8 +2484,8 @@ $id("modal").onclick=e=>{ if(e.target===$id("modal")) closeModal(); };
 function frame(){ return sub ? sub.plies[sub.i] : VARS[vi].plies[pi]; }
 function paintHL(){
   $(".square-55d63").removeClass("hl");
-  const p = frame();
-  if(p.from) $("#board .square-"+p.from+", #board .square-"+p.to).addClass("hl");
+  const p = expl ? expl.last : tr ? tr.last : frame();
+  if(p && p.from) $("#board .square-"+p.from+", #board .square-"+p.to).addClass("hl");
 }
 
 /* ---- пропущенные комментарии ---- */
@@ -2537,6 +2617,7 @@ function closeExpl(){                       /* только гасит режи�
 }
 function toggleExpl(){
   if(expl){ closeExpl(); render(); return; }
+  if(tr) closeTrainer();
   sub=null; expl={g:new ChessCls(), last:null, err:null};
   $id("explbtn").classList.add("on");
   $id("explbtn").textContent="✕ Выйти из проводника";
@@ -2557,10 +2638,7 @@ $id("explbtn").onclick=toggleExpl;
 function renderExpl(){
   const g=expl.g, cell=INDEX[KEY(g.fen())];
   board.position(g.fen());
-  setTimeout(()=>{
-    $(".square-55d63").removeClass("hl");
-    if(expl && expl.last) $("#board .square-"+expl.last.from+", #board .square-"+expl.last.to).addClass("hl");
-  }, 30);
+  setTimeout(paintHL, 30);
 
   $id("gsym").textContent="⚑"; $id("gsym").classList.add("dim");
   $id("cpnum").textContent="—";
@@ -2627,8 +2705,389 @@ function renderExpl(){
   $id("next").classList.remove("coming");
 }
 
+/* ================================================================
+   тренажёр: приложение играет за белых по одному из вариантов книги,
+   пользователь отвечает за чёрных. Любой книжный ответ засчитывается —
+   если он уводит в другой вариант, тренажёр просто переключается на него.
+   ================================================================ */
+const TRAIN_LABEL = "🎓 Тренажёр — разыграть варианты за чёрных";
+const HINT_LABEL  = $id("hint").textContent;
+$id("trainbtn").textContent = TRAIN_LABEL;
+
+/* флаг ставит сборка (src/_tail_clean.py): партии целиком и линии,
+   где плохой ход показан за чёрных, — повторять такое тренажёр не просит */
+const DEFAULT_OFF = v => !!v.off;
+
+const LS_KEY = "chessbooks.trainer.v1";
+let TR_DB = {stats:{}, off:{}};
+try{
+  const raw = localStorage.getItem(LS_KEY);
+  if(raw){ const d = JSON.parse(raw); TR_DB.stats = d.stats || {}; TR_DB.off = d.off || {}; }
+}catch(e){}                                  /* приватный режим или file:// без хранилища */
+function trSave(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(TR_DB)); }catch(e){} }
+
+/* 1 вариант, 2 варианта, 5 вариантов */
+function plural(n, one, few, many){
+  const a = Math.abs(n) % 100, b = a % 10;
+  return n + " " + (a > 10 && a < 20 ? many : b === 1 ? one : b > 1 && b < 5 ? few : many);
+}
+const vkey   = (b,v) => BOOKS[b].id + "/" + v.id;
+const statOf = (b,v) => TR_DB.stats[vkey(b,v)] || {runs:0, clean:0, streak:0, errs:0, last:null};
+const isOff  = (b,v) => { const k = vkey(b,v); return k in TR_DB.off ? !!TR_DB.off[k] : DEFAULT_OFF(v); };
+function setOff(i, off){ TR_DB.off[vkey(bi, VARS[i])] = off ? 1 : 0; trSave(); }
+const activeIdx = () => VARS.map((v,i)=>i).filter(i=>!isOff(bi, VARS[i]));
+const learned   = s => s.streak >= 2;
+
+/* сыгранная линия совпадает с началом варианта */
+const pathFits = (v, path) => v.moves.length >= path.length && path.every((san,i)=>v.moves[i]===san);
+
+/* чем хуже вариант знаешь, тем чаще он выпадает */
+function trWeight(i){
+  const s = statOf(bi, VARS[i]);
+  if(!s.runs)          return 8;
+  if(s.last === "err") return 6;
+  if(s.streak >= 3)    return 1;
+  if(s.streak >= 2)    return 2;
+  return 4;
+}
+function trPick(cands){
+  const w = cands.map(trWeight);
+  let r = Math.random() * w.reduce((a,b)=>a+b, 0);
+  for(let k=0;k<cands.length;k++){ r -= w[k]; if(r <= 0) return cands[k]; }
+  return cands[cands.length-1];
+}
+
+function trRecord(i, errs){
+  const k = vkey(bi, VARS[i]);
+  const st = TR_DB.stats[k] || (TR_DB.stats[k] = {runs:0, clean:0, streak:0, errs:0, last:null});
+  st.runs++; st.errs += errs;
+  if(errs === 0){ st.clean++; st.streak++; st.last = "ok"; }
+  else          { st.streak = 0;           st.last = "err"; }
+  trSave();
+}
+
+/* ---- вход и выход ---- */
+let trTimer = null;
+function closeTrainer(){
+  tr = null; clearTimeout(trTimer);
+  $id("trainbtn").classList.remove("on");
+  $id("trainbtn").textContent = TRAIN_LABEL;
+  $id("sheet").querySelector("summary").textContent = "Все ходы варианта";
+  $id("hint").textContent = HINT_LABEL;
+}
+$id("trainbtn").onclick = ()=>{
+  if(tr){ closeTrainer(); render(); return; }
+  openTr();
+};
+
+function trBegin(target){
+  if(expl) closeExpl();
+  sub = null;
+  const set = activeIdx();
+  if(!set.length) return;
+  tr = {g:new ChessCls(), path:[], target: target != null ? target : trPick(set),
+        errs:0, wrong:null, offbook:null, switched:null, shown:null, illegal:null,
+        last:null, done:false, wait:false, credited:[]};
+  $id("trainbtn").classList.add("on");
+  $id("trainbtn").textContent = "✕ Выйти из тренажёра";
+  trRender();
+  trWhite();
+}
+
+/* ---- ход белых: играем по текущему целевому варианту ---- */
+function trWhite(){
+  if(!tr || tr.done) return;
+  const v = VARS[tr.target];
+  if(tr.path.length >= v.moves.length){ trFinish(); return; }
+  if(tr.g.turn() !== "b"){
+    tr.wait = true; trRender();
+    clearTimeout(trTimer);
+    trTimer = setTimeout(()=>{
+      if(!tr || tr.done) return;
+      const san = VARS[tr.target].moves[tr.path.length];
+      let m = null; try{ m = tr.g.move(san); }catch(e){ m = null; }
+      tr.wait = false;
+      if(!m){ tr.done = true; tr.fatal = san; trRender(); return; }
+      tr.path.push(san); tr.last = m;
+      if(tr.path.length >= VARS[tr.target].moves.length){ trFinish(); return; }
+      trRender();
+    }, 430);
+  }
+}
+
+/* ---- ход пользователя ---- */
+function trDrop(from, to){
+  if(!tr || tr.done || tr.wait || tr.g.turn() !== "b") return "snapback";
+  const v = VARS[tr.target], expect = v.moves[tr.path.length];
+  const pm = expect && expect.match(/=([QRBN])/);      /* превращение — как в книге */
+  let m = null;
+  try{ m = tr.g.move({from, to, promotion: pm ? pm[1].toLowerCase() : "q"}); }catch(e){ m = null; }
+  if(!m){ trSay(null); return "snapback"; }
+
+  if(m.san === expect){ trAccept(m, null); return; }
+
+  /* ход не по цели, но, может быть, он есть в другом варианте из этой же позиции */
+  const fits = i => pathFits(VARS[i], tr.path) && VARS[i].moves[tr.path.length] === m.san;
+  const alts = activeIdx().filter(i => i !== tr.target && fits(i));
+  if(alts.length){ trAccept(m, trPick(alts)); return; }
+
+  /* ход книжный, но его вариант выключен из тренировки — ошибкой не считаем */
+  const off = VARS.map((v,i)=>i).filter(i => i !== tr.target && fits(i));
+  tr.g.undo();
+  if(off.length){
+    tr.offbook = {played:m.san, num:trNum(tr.path.length), title:VARS[off[0]].title};
+    tr.wrong = null;
+    trRender();
+    return "snapback";
+  }
+  tr.errs++;
+  tr.offbook = null;
+  tr.wrong = {played:m.san, num:trNum(tr.path.length)};
+  trRender();
+  if(navigator.vibrate) navigator.vibrate([25,60,25]);
+  return "snapback";
+}
+function trAccept(m, newTarget){
+  tr.path.push(m.san); tr.last = m; tr.wrong = null; tr.shown = null; tr.offbook = null;
+  tr.switched = newTarget != null ? VARS[newTarget].title : null;
+  if(newTarget != null) tr.target = newTarget;
+  if(tr.path.length >= VARS[tr.target].moves.length){ trFinish(); return; }
+  trRender();
+  trWhite();
+}
+/* коротко подсветить, что ход вообще нелегальный (за ошибку это не считаем) */
+let trSayTimer = null;
+function trSay(msg){
+  if(!tr) return;
+  tr.illegal = msg === null ? "так не сходить" : msg;
+  clearTimeout(trSayTimer);
+  trSayTimer = setTimeout(()=>{ if(tr){ tr.illegal = null; trRender(); } }, 1800);
+  setTimeout(trRender, 0);
+}
+
+/* ---- подсказка и сдача ---- */
+function trShow(){
+  if(!tr || tr.done || tr.wait) return;
+  if(!tr.wrong) tr.errs++;                 /* попросил ход сам — тоже не выучено */
+  const san = VARS[tr.target].moves[tr.path.length];
+  let m = null; try{ m = tr.g.move(san); }catch(e){ m = null; }
+  if(!m){ tr.done = true; tr.fatal = san; trRender(); return; }
+  tr.path.push(san); tr.last = m; tr.wrong = null; tr.switched = null; tr.offbook = null; tr.shown = san;
+  if(tr.path.length >= VARS[tr.target].moves.length){ trFinish(); return; }
+  trRender(); trWhite();
+}
+function trGiveUp(){
+  if(!tr) return;
+  trRecord(tr.target, Math.max(1, tr.errs));
+  closeTrainer(); trBegin();
+}
+
+function trFinish(){
+  tr.done = true; tr.wait = false; clearTimeout(trTimer);
+  /* засчитываем все варианты, чьи ходы в точности совпали с сыгранной линией */
+  const done = activeIdx().filter(i => VARS[i].moves.length === tr.path.length
+                                    && pathFits(VARS[i], tr.path));
+  if(!done.includes(tr.target)) done.push(tr.target);
+  done.forEach(i => trRecord(i, tr.errs));
+  tr.credited = done;
+  buildOpts();
+  trRender();
+}
+
+/* ---- отрисовка ---- */
+const trNum = len => (len % 2 ? Math.ceil((len+1)/2) + "…" : (len/2 + 1) + ".");
+function trLine(){
+  const h = tr.g.history(), out = [];
+  for(let i=0;i<h.length;i++){
+    const mv = (i % 2 ? "" : (i/2 + 1) + ".") + h[i];
+    out.push(i === h.length-1 ? "<i>"+mv+"</i>" : "<b>"+mv+"</b>");
+  }
+  return out.join(" ");
+}
+function trRender(){
+  if(!tr) return;
+  const v = VARS[tr.target];
+  board.position(tr.g.fen());
+  setTimeout(paintHL, 30);
+
+  $id("pch").textContent = "тренировка · " + BOOKS[bi].short;
+  $id("pnm").textContent = tr.done ? v.title : "вариант скрыт";
+  $id("varpos").textContent = tr.done
+    ? `${v.chapter} · ошибок ${tr.errs}`
+    : `ход ${Math.floor(tr.path.length/2)+1} · ошибок ${tr.errs} · в тренировке ${activeIdx().length}`;
+
+  if(tr.done){ paintGauge(v.cp ? v.cp[tr.path.length] : null, v.tag); }
+  else { paintGauge(null, "🎓"); }
+  $id("hint").textContent = tr.done ? "вариант пройден"
+                          : tr.wait ? "белые отвечают"
+                          : "тащи фигуру за чёрных";
+
+  const note = $id("note"), subs = $id("subs");
+  $id("missed").classList.remove("on");
+  subs.innerHTML = "";
+  const add = (cls, txt, fn)=>{ const b=document.createElement("button");
+    if(cls) b.className=cls; b.textContent=txt; b.onclick=fn; subs.appendChild(b); return b; };
+
+  if(tr.fatal){
+    note.className = "note err";
+    note.innerHTML = `<div class="head"><b>сбой</b></div>`+
+      `<p>Ход <b>${tr.fatal}</b> из варианта «${v.title}» не встал на доску. Это ошибка в данных книги, а не в твоей игре.</p>`;
+    add("go", "Другой вариант", ()=>trBegin());
+    add(null, "Настройка тренировки", openTr);
+  } else if(tr.done){
+    const good = tr.errs === 0;
+    note.className = "note " + (good ? "ok" : "err");
+    const errWord = plural(tr.errs, "ошибка", "ошибки", "ошибок");
+    const st = statOf(bi, v);
+    note.innerHTML =
+      `<div class="head"><b>${good ? "вариант пройден" : "вариант пройден с ошибками"}</b>`+
+      `<span class="cnt${good?"":" bad"}">${good ? "чисто" : errWord}</span></div>`+
+      `<p><b>${v.title}</b><br>${v.chapter}<br><span style="color:var(--mut)">${v.eval}</span></p>`+
+      `<div class="trline">${trLine()}</div>`+
+      `<p style="margin-top:8px;color:var(--mut);font-size:13px">`+
+      `чисто ${st.clean} из ${st.runs}${learned(st) ? " · <span style=\"color:#7FBF8E\">выучен</span>" : ""}`+
+      (tr.credited.length>1 ? ` · заодно засчитан ещё `+
+        plural(tr.credited.length-1,"вариант","варианта","вариантов") : "")+`</p>`;
+    add("go", "Ещё вариант", ()=>trBegin());
+    add(null, "Повторить этот", ()=>trBegin(tr.target));
+    add(null, "Разобрать в книге", ()=>{ const t=tr.target; closeTrainer(); vi=t; pi=0; sub=null; render(); });
+    add(null, "Настройка тренировки", openTr);
+  } else if(tr.offbook){
+    note.className = "note";
+    note.innerHTML =
+      `<div class="head"><b>тренажёр</b><span class="cnt">другой вариант</span></div>`+
+      `<p><b>${tr.offbook.num}${tr.offbook.played}</b> — ход книжный, но вариант «${tr.offbook.title}» `+
+      `сейчас выключен из тренировки. Сыграй по-другому или включи его в настройке.</p>`+
+      `<div class="trline">${trLine()}</div>`;
+    add(null, "Показать ход", trShow);
+    add(null, "Не знаю, дальше", trGiveUp);
+    add(null, "Настройка тренировки", openTr);
+  } else if(tr.wrong){
+    note.className = "note err";
+    note.innerHTML =
+      `<div class="head"><b>тренажёр</b><span class="cnt bad">не то</span></div>`+
+      `<p>✕ <b>${tr.wrong.num}${tr.wrong.played}</b> — такого хода нет в репертуаре из этой позиции. `+
+      `Попробуй ещё или посмотри ответ.</p>`+
+      `<div class="trline">${trLine()}</div>`;
+    add(null, "Показать ход", trShow);
+    add(null, "Не знаю, дальше", trGiveUp);
+    add(null, "Настройка тренировки", openTr);
+  } else {
+    note.className = "note";
+    const state = tr.illegal ? tr.illegal
+                : tr.wait    ? "белые думают"
+                : tr.switched ? "переключились"
+                : "твой ход за чёрных";
+    note.innerHTML =
+      `<div class="head"><b>тренажёр</b><span class="cnt${tr.illegal?" bad":""}">${state}</span></div>`+
+      (tr.switched
+        ? `<p style="color:#7FBF8E">✓ тоже книжный ход — дальше тренируем вариант «${tr.switched}»</p>`
+        : tr.shown
+        ? `<p style="color:var(--mut)">Подсказка: сыграно <b>${tr.shown}</b>.</p>`
+        : `<p style="color:var(--mut)">Приложение играет за белых по одному из вариантов книги. `+
+          `Любой книжный ответ засчитывается.</p>`)+
+      `<div class="trline">${tr.path.length ? trLine() : "—"}</div>`;
+    add(null, "Показать ход", trShow);
+    add(null, "Не знаю, дальше", trGiveUp);
+    add(null, "Настройка тренировки", openTr);
+  }
+  $id("ev").className = "val" + (tr.wrong || (tr.done && tr.errs) ? " bad" : "");
+  $id("ev").textContent = tr.done ? v.eval : (tr.wrong ? "ошибка" : "тренировка");
+
+  /* лист ходов -> сыгранная линия */
+  const box = $id("rows"); box.innerHTML = "";
+  $id("sheet").querySelector("summary").textContent =
+    tr.done ? "Вариант целиком" : `Сыграно ходов: ${tr.path.length}`;
+  const src = tr.done ? VARS[tr.target].moves : tr.path;
+  for(let i=0;i<src.length;i+=2){
+    const row=document.createElement("div"); row.className="row";
+    const num=document.createElement("div"); num.className="n"; num.textContent=i/2+1;
+    row.appendChild(num);
+    [i,i+1].forEach(k=>{
+      const b=document.createElement("button");
+      if(k<src.length){ b.textContent=src[k]; b.disabled=true; }
+      else { b.className="empty"; b.textContent="—"; b.disabled=true; }
+      row.appendChild(b);
+    });
+    box.appendChild(row);
+  }
+
+  ["first","prev","next","last"].forEach(id=>$id(id).disabled = true);
+  $id("next").classList.remove("coming");
+}
+
+/* ---- настройка: что тренируем и как идут дела ---- */
+function openTr(){ $id("trmodal").classList.add("on"); trOpts(); trSum(); }
+function closeTr(){ $id("trmodal").classList.remove("on"); }
+$id("trclose").onclick = closeTr;
+$id("trmodal").onclick = e=>{ if(e.target===$id("trmodal")) closeTr(); };
+$id("trstart").onclick = ()=>{ closeTr(); trBegin(); };
+$id("trall").onclick   = ()=>{ VARS.forEach((v,i)=>setOff(i,false)); trOpts(); trSum(); };
+$id("trnone").onclick  = ()=>{ VARS.forEach((v,i)=>setOff(i,true));  trOpts(); trSum(); };
+$id("trweak").onclick  = ()=>{ VARS.forEach((v,i)=>setOff(i, learned(statOf(bi,v)))); trOpts(); trSum(); };
+$id("trreset").onclick = ()=>{
+  if(!confirm("Стереть статистику тренировок по этой книге?")) return;
+  VARS.forEach(v=>delete TR_DB.stats[vkey(bi,v)]);
+  trSave(); trOpts(); trSum();
+};
+
+function badgeOf(s){
+  if(!s.runs) return {t:"—", c:""};
+  const r = s.clean + "/" + s.runs;
+  if(learned(s))       return {t:"✓ "+r, c:"ok"};
+  if(s.last === "err") return {t:"✕ "+r, c:"bad"};
+  return {t:"• "+r, c:"mid"};
+}
+function trSum(){
+  const on = activeIdx();
+  const ok    = on.filter(i=>learned(statOf(bi,VARS[i]))).length;
+  const bad   = on.filter(i=>statOf(bi,VARS[i]).last === "err").length;
+  const fresh = on.filter(i=>!statOf(bi,VARS[i]).runs).length;
+  const dflt = VARS.filter(v=>v.off).length;
+  $id("trsum").innerHTML =
+    `${BOOKS[bi].short}: в тренировке <b>${on.length}</b> из ${VARS.length}<br>`+
+    `выучено <b>${ok}</b> · с ошибками <b>${bad}</b> · ещё не пробовал <b>${fresh}</b>`+
+    (dflt ? `<br><span style="opacity:.75">по умолчанию вне тренировки `+
+            `${plural(dflt,"вариант","варианта","вариантов")}: партии целиком `+
+            `и линии, где ошибается чёрный</span>` : "");
+  $id("trstart").disabled = !on.length;
+  $id("trstart").textContent = on.length ? "Начать тренировку" : "Нечего тренировать";
+}
+function trOpts(){
+  const box = $id("tropts"); box.innerHTML = ""; let chapter = null;
+  VARS.forEach((v,i)=>{
+    if(v.chapter !== chapter){
+      chapter = v.chapter;
+      const ch = chapter;
+      const h = document.createElement("div"); h.className = "trgrp";
+      const s = document.createElement("span"); s.textContent = ch;
+      const b = document.createElement("button");
+      const idx = VARS.map((x,k)=>[x,k]).filter(([x])=>x.chapter===ch).map(([,k])=>k);
+      const anyOn = idx.some(k=>!isOff(bi,VARS[k]));
+      b.textContent = anyOn ? "выключить главу" : "включить главу";
+      b.onclick = ()=>{ idx.forEach(k=>setOff(k, anyOn)); trOpts(); trSum(); };
+      h.appendChild(s); h.appendChild(b); box.appendChild(h);
+    }
+    const on = !isOff(bi, v), bd = badgeOf(statOf(bi, v));
+    const b = document.createElement("button");
+    b.className = "tropt"; b.setAttribute("aria-pressed", on+"");
+    b.innerHTML = `<span class="chk">${on?"✓":"○"}</span>`+
+      `<span class="cap"><span class="t">${v.title}</span>`+
+      `<span class="mv">${v.off ? "не для заучивания · " : ""}${v.line}</span></span>`+
+      `<span class="bdg ${bd.c}">${bd.t}</span>`;
+    b.onclick = ()=>{
+      const off = !isOff(bi, v); setOff(i, off);
+      b.setAttribute("aria-pressed", (!off)+"");
+      b.querySelector(".chk").textContent = off ? "○" : "✓";
+      trSum();
+    };
+    box.appendChild(b);
+  });
+}
+
 /* ---- навигация ---- */
 const go = d => {
+  if(tr) return;
   if(expl){ if(d<0 && expl.g.history().length){ expl.g.undo(); expl.last=null; expl.err=null; renderExpl(); } return; }
   if(sub){
     const ni = sub.i + d;
@@ -2644,20 +3103,27 @@ function nextNote(dir){
 }
 $id("next").onclick=()=>go(1);
 $id("prev").onclick=()=>go(-1);
-$id("first").onclick=()=>{ if(expl){ expl.g.reset(); expl.last=null; expl.err=null; renderExpl(); return; } if(sub){sub=null;} else {pi=0;} render();};
-$id("last").onclick=()=>{ if(expl) return; if(sub){sub.i=sub.plies.length-1;} else {pi=VARS[vi].plies.length-1;} render();};
-$id("flip").onclick=()=>{board.flip(); if(expl){renderExpl();} else {render();setTimeout(paintHL,30);} };
+$id("first").onclick=()=>{ if(tr) return; if(expl){ expl.g.reset(); expl.last=null; expl.err=null; renderExpl(); return; } if(sub){sub=null;} else {pi=0;} render();};
+$id("last").onclick=()=>{ if(expl||tr) return; if(sub){sub.i=sub.plies.length-1;} else {pi=VARS[vi].plies.length-1;} render();};
+$id("flip").onclick=()=>{board.flip(); if(expl){renderExpl();} else if(tr){trRender();} else {render();setTimeout(paintHL,30);} };
 
 let tx=0,ty=0;
 const bw=$id("board");
 bw.addEventListener("touchstart",e=>{tx=e.changedTouches[0].clientX;ty=e.changedTouches[0].clientY;},{passive:true});
 bw.addEventListener("touchend",e=>{
   const dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty;
-  if(Math.abs(dx)>40 && Math.abs(dx)>Math.abs(dy)) go(dx<0?1:-1);
+  if(!tr && Math.abs(dx)>40 && Math.abs(dx)>Math.abs(dy)) go(dx<0?1:-1);
 },{passive:true});
 
 document.addEventListener("keydown",e=>{
   if($id("modal").classList.contains("on")){ if(e.key==="Escape") closeModal(); return; }
+  if($id("trmodal").classList.contains("on")){ if(e.key==="Escape") closeTr(); return; }
+  if(tr){
+    if(e.key==="Escape"){ closeTrainer(); render(); e.preventDefault(); }
+    else if(e.key==="Enter" && tr.done){ trBegin(); e.preventDefault(); }
+    else if(e.key>="1" && e.key<="9"){ const i=+e.key-1; if(i<BOOKS.length && i!==bi){ setBook(i); e.preventDefault(); } }
+    return;
+  }
   if(expl && e.key==="Escape"){ toggleExpl(); e.preventDefault(); return; }
   if(expl && e.key!=="ArrowLeft"){ return; }
   if(e.key==="ArrowRight"){go(1);e.preventDefault();}
@@ -2667,6 +3133,7 @@ document.addEventListener("keydown",e=>{
   else if(e.key==="Home"){pi=0;render();e.preventDefault();}
   else if(e.key==="End"){pi=VARS[vi].plies.length-1;render();e.preventDefault();}
   else if(e.key==="c"||e.key==="C"||e.key==="с"||e.key==="С"){nextNote(e.shiftKey?-1:1);e.preventDefault();}
+  else if(e.key==="t"||e.key==="T"||e.key==="е"||e.key==="Е"){openTr();e.preventDefault();}
   else if(e.key>="1" && e.key<="9"){
     const i=+e.key-1;
     if(i<BOOKS.length && i!==bi){ setBook(i); e.preventDefault(); }

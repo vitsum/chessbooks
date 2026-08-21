@@ -104,6 +104,10 @@ h1{font-family:var(--disp);font-weight:600;font-size:clamp(22px,6vw,40px);line-h
 .opt .row1{display:flex;align-items:baseline;gap:10px}
 .opt .t{font-family:var(--disp);font-size:16px;text-transform:uppercase;letter-spacing:.03em;flex:1}
 .opt .e{font-family:var(--mono);font-size:12px;color:var(--gold);white-space:nowrap}
+.opt .sbdg{font-family:var(--mono);font-size:12px;white-space:nowrap;color:var(--mut)}
+.opt .sbdg.ok{color:#7FBF8E}
+.opt .sbdg.bad{color:var(--brick)}
+.opt .sbdg.mid{color:var(--gold)}
 .opt .e.bad{color:var(--brick)}
 .opt .mv{font-family:var(--mono);font-size:11.5px;color:var(--mut);margin-top:3px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -142,6 +146,55 @@ h1{font-family:var(--disp);font-weight:600;font-size:clamp(22px,6vw,40px);line-h
 .exitsub{width:100%;margin-top:8px;background:none;border:1px solid #7FC6A8;color:#7FC6A8;
   padding:10px;border-radius:2px;cursor:pointer;font-family:var(--mono);font-size:12px}
 .exitsub:hover{background:rgba(127,198,168,.12)}
+
+/* ---------- тренажёр ---------- */
+.modes{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.modes .explbtn{flex:1 1 250px;width:auto;margin-top:0}
+.trsum{font-family:var(--mono);font-size:11px;letter-spacing:.05em;color:var(--mut);
+  padding:13px 16px 0;line-height:1.7}
+.trsum b{color:var(--gold);font-weight:400}
+.trbar{display:flex;flex-wrap:wrap;gap:6px;padding:10px 16px 12px;border-bottom:1px solid var(--rule)}
+.trbar button{background:var(--panel);border:1px solid var(--rule);color:var(--tx);
+  font-family:var(--body);font-size:12.5px;padding:7px 10px;border-radius:2px;cursor:pointer}
+.trbar button:hover{border-color:var(--gold);color:var(--gold)}
+.trbar button.danger:hover{border-color:var(--brick);color:var(--brick)}
+.trgrp{display:flex;align-items:center;gap:10px;padding:15px 16px 7px;
+  border-bottom:1px solid var(--rule)}
+.trgrp span{flex:1;min-width:0;font-family:var(--mono);font-size:10.5px;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--gold);opacity:.85}
+.trgrp button{background:none;border:1px solid var(--rule);color:var(--mut);
+  font-family:var(--mono);font-size:10px;padding:4px 8px;border-radius:2px;cursor:pointer;
+  white-space:nowrap}
+.trgrp button:hover{border-color:var(--gold);color:var(--gold)}
+.tropt{display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:none;
+  border:none;border-bottom:1px solid rgba(38,69,74,.6);padding:11px 16px;cursor:pointer;color:var(--tx)}
+.tropt:hover{background:var(--panel)}
+.tropt[aria-pressed="false"]{opacity:.4}
+.tropt .chk{flex:0 0 16px;font-family:var(--mono);font-size:13px;color:var(--gold)}
+.tropt[aria-pressed="false"] .chk{color:var(--mut)}
+.tropt .cap{flex:1;min-width:0}
+.tropt .t{display:block;font-family:var(--disp);font-size:15px;text-transform:uppercase;
+  letter-spacing:.03em;line-height:1.2}
+.tropt .mv{display:block;font-family:var(--mono);font-size:11px;color:var(--mut);margin-top:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bdg{flex:0 0 auto;font-family:var(--mono);font-size:11px;color:var(--mut);white-space:nowrap}
+.bdg.ok{color:#7FBF8E}
+.bdg.bad{color:var(--brick)}
+.bdg.mid{color:var(--gold)}
+.trgo{position:sticky;bottom:0;background:var(--ink);border-top:1px solid var(--rule);
+  padding:12px 16px;padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+.trgo button{width:100%;background:var(--gold);border:none;color:var(--ink);font-family:var(--disp);
+  font-size:15px;text-transform:uppercase;letter-spacing:.06em;padding:13px;border-radius:2px;
+  cursor:pointer}
+.trgo button:disabled{background:var(--panel);color:var(--mut);cursor:default}
+.note.ok{border-left-color:#7FBF8E;background:#15302C}
+.note.err{border-left-color:var(--brick);background:#2A1A18}
+.note .trline{font-family:var(--mono);font-size:13.5px;line-height:1.95;margin-top:7px;color:var(--mut)}
+.note .trline b{color:var(--tx);font-weight:400}
+.note .trline i{color:var(--gold);font-style:normal}
+.subs button.go{background:var(--gold);color:var(--ink);border-color:var(--gold);
+  font-family:var(--disp);text-transform:uppercase;letter-spacing:.05em}
+.subs button.go:hover{background:#F2BB53}
 
 /* ---------- доска ---------- */
 #board{flex:1;min-width:0}
@@ -265,13 +318,31 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
   </button>
   <button class="varnav" id="nextvar" title="Следующий вариант" aria-label="Следующий вариант">▶</button>
 </div>
-<button class="explbtn" id="explbtn">⚑ Проводник — двигать фигуры и искать позицию в книге</button>
+<div class="modes">
+  <button class="explbtn" id="explbtn">⚑ Проводник — двигать фигуры и искать позицию в книге</button>
+  <button class="explbtn" id="trainbtn">🎓 Тренажёр — разыграть варианты за чёрных</button>
+</div>
 <div class="varpos" id="varpos"></div>
 
 <div class="sheetbg" id="modal" role="dialog" aria-modal="true" aria-label="Выбор варианта">
   <div class="picklist" id="picklist">
     <div class="top"><b>Выберите вариант</b><button id="close" aria-label="Закрыть">×</button></div>
     <div id="opts"></div>
+  </div>
+</div>
+
+<div class="sheetbg" id="trmodal" role="dialog" aria-modal="true" aria-label="Настройка тренировки">
+  <div class="picklist" id="trlist">
+    <div class="top"><b>Что тренируем</b><button id="trclose" aria-label="Закрыть">×</button></div>
+    <div class="trsum" id="trsum"></div>
+    <div class="trbar">
+      <button id="trall">включить все</button>
+      <button id="trnone">выключить все</button>
+      <button id="trweak">только невыученные</button>
+      <button id="trreset" class="danger">сбросить статистику книги</button>
+    </div>
+    <div id="tropts"></div>
+    <div class="trgo"><button id="trstart">Начать тренировку</button></div>
   </div>
 </div>
 
@@ -296,7 +367,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
       <button id="last" title="В конец" aria-label="В конец">⏭</button>
       <button id="flip" class="flip" title="Развернуть доску" aria-label="Развернуть доску">⇅</button>
     </div>
-    <div class="hint">свайп по доске — листать ходы</div>
+    <div class="hint" id="hint">свайп по доске — листать ходы</div>
     <div class="note" id="note"></div>
     <div class="subs" id="subs"></div>
     <button class="missed" id="missed"></button>
@@ -310,7 +381,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
 
 <footer>
   <kbd>←</kbd> <kbd>→</kbd> — ходы, <kbd>↑</kbd> <kbd>↓</kbd> — варианты, <kbd>C</kbd> — к следующему комментарию, <kbd>Home</kbd> / <kbd>End</kbd> — в начало и в конец. Градусник — Stockfish 16, глубина 16, посчитано заранее; символ в строке ниже доски — оценка из книги.
-  <span id="bookkeys"><kbd>1</kbd>…<kbd>9</kbd> — переключить книгу. </span>Доска: chessboard.js + chess.js, фигуры Cburnett.
+  <span id="bookkeys"><kbd>1</kbd>…<kbd>9</kbd> — переключить книгу, </span><kbd>T</kbd> — тренажёр. Доска: chessboard.js + chess.js, фигуры Cburnett.
   <span id="credit"></span>
 </footer>
 
@@ -348,6 +419,7 @@ let bi = 0, vi = 0, pi = 0;
 let VARS = BOOKS[0].vars;             /* варианты текущей книги */
 let sub = null;
 let expl = null;                      /* режим проводника: свободные ходы по доске */
+let tr   = null;                      /* режим тренажёра: разыгрывание варианта за чёрных */
 
 /* индекс всех позиций всех книг: ключ = FEN без счётчиков, перестановки ходов ловятся автоматически */
 const KEY = f => f.split(" ").slice(0,4).join(" ");
@@ -397,9 +469,14 @@ BOOKS.forEach((bk,b)=>bk.vars.forEach((v,k)=>{
 const board = Chessboard("board", {
   position:"start", orientation:"black", showNotation:true, draggable:true,
   dropOffBoard:"snapback",
-  /* тянуть фигуры можно только в проводнике и только пока партия не кончилась */
-  onDragStart: () => !!expl && !expl.g.isGameOver(),
+  /* в проводнике тянем что угодно, в тренажёре — только чёрные и только в свой ход */
+  onDragStart: (src, piece) => {
+    if(expl) return !expl.g.isGameOver();
+    if(tr)   return !tr.done && !tr.wait && tr.g.turn() === "b" && piece[0] === "b";
+    return false;
+  },
   onDrop: (from, to) => {
+    if(tr) return trDrop(from, to);
     if(!expl) return "snapback";
     /* chess.js 1.0-beta бросает исключение на нелегальном ходе. Без catch оно вылетает
        из обработчика chessboard.js, тот не успевает вернуть фигуру — и доска
@@ -412,7 +489,7 @@ const board = Chessboard("board", {
   },
   /* после анимации приводим доску к состоянию партии: рокировка, взятие на проходе
      и превращение двигают не только перетащенную фигуру */
-  onSnapEnd: () => { if(expl) board.position(expl.g.fen(), false); },
+  onSnapEnd: () => { const g = expl ? expl.g : tr ? tr.g : null; if(g) board.position(g.fen(), false); },
   pieceTheme: p => PIECES[p], moveSpeed:190, appearSpeed:140, trashSpeed:120
 });
 let lastW = 0;
@@ -433,10 +510,12 @@ function buildOpts(){
     const b=document.createElement("button");
     b.className="opt"; b.dataset.i=i;
     const bad=/−|\+−|µ/.test(v.eval);
+    const bd=badgeOf(statOf(bi,v));
     b.innerHTML=`<span class="row1"><span class="t">${v.title}</span>`+
+                (bd.c ? `<span class="sbdg ${bd.c}" title="тренировка: ${bd.t}">${bd.t[0]}</span>` : "")+
                 `<span class="e${bad?" bad":""}">${v.tag}</span></span>`+
                 `<span class="mv">${v.line}</span>`;
-    b.onclick=()=>{ sub=null; vi=i; pi=0; closeModal(); render(); };
+    b.onclick=()=>{ if(tr) closeTrainer(); sub=null; vi=i; pi=0; closeModal(); render(); };
     box.appendChild(b);
   });
 }
@@ -456,6 +535,7 @@ function buildOpts(){
 
 function setBook(i){
   if(expl) closeExpl();
+  if(tr) closeTrainer();
   bi = i; VARS = BOOKS[bi].vars; vi = 0; pi = 0; sub = null;
   paintBook(); buildOpts(); render();
 }
@@ -485,7 +565,7 @@ $id("note").addEventListener("click", e=>{
   render();
 });
 $id("picker").onclick=openModal;
-function goVar(d){ if(expl) toggleExpl(); sub=null; vi=(vi+d+VARS.length)%VARS.length; pi=0; render(); }
+function goVar(d){ if(expl) toggleExpl(); if(tr) closeTrainer(); sub=null; vi=(vi+d+VARS.length)%VARS.length; pi=0; render(); }
 $id("prevvar").onclick=()=>goVar(-1);
 $id("nextvar").onclick=()=>goVar(1);
 $id("close").onclick=closeModal;
@@ -495,8 +575,8 @@ $id("modal").onclick=e=>{ if(e.target===$id("modal")) closeModal(); };
 function frame(){ return sub ? sub.plies[sub.i] : VARS[vi].plies[pi]; }
 function paintHL(){
   $(".square-55d63").removeClass("hl");
-  const p = frame();
-  if(p.from) $("#board .square-"+p.from+", #board .square-"+p.to).addClass("hl");
+  const p = expl ? expl.last : tr ? tr.last : frame();
+  if(p && p.from) $("#board .square-"+p.from+", #board .square-"+p.to).addClass("hl");
 }
 
 /* ---- пропущенные комментарии ---- */
@@ -628,6 +708,7 @@ function closeExpl(){                       /* только гасит режи�
 }
 function toggleExpl(){
   if(expl){ closeExpl(); render(); return; }
+  if(tr) closeTrainer();
   sub=null; expl={g:new ChessCls(), last:null, err:null};
   $id("explbtn").classList.add("on");
   $id("explbtn").textContent="✕ Выйти из проводника";
@@ -648,10 +729,7 @@ $id("explbtn").onclick=toggleExpl;
 function renderExpl(){
   const g=expl.g, cell=INDEX[KEY(g.fen())];
   board.position(g.fen());
-  setTimeout(()=>{
-    $(".square-55d63").removeClass("hl");
-    if(expl && expl.last) $("#board .square-"+expl.last.from+", #board .square-"+expl.last.to).addClass("hl");
-  }, 30);
+  setTimeout(paintHL, 30);
 
   $id("gsym").textContent="⚑"; $id("gsym").classList.add("dim");
   $id("cpnum").textContent="—";
@@ -718,8 +796,389 @@ function renderExpl(){
   $id("next").classList.remove("coming");
 }
 
+/* ================================================================
+   тренажёр: приложение играет за белых по одному из вариантов книги,
+   пользователь отвечает за чёрных. Любой книжный ответ засчитывается —
+   если он уводит в другой вариант, тренажёр просто переключается на него.
+   ================================================================ */
+const TRAIN_LABEL = "🎓 Тренажёр — разыграть варианты за чёрных";
+const HINT_LABEL  = $id("hint").textContent;
+$id("trainbtn").textContent = TRAIN_LABEL;
+
+/* флаг ставит сборка (src/_tail_clean.py): партии целиком и линии,
+   где плохой ход показан за чёрных, — повторять такое тренажёр не просит */
+const DEFAULT_OFF = v => !!v.off;
+
+const LS_KEY = "chessbooks.trainer.v1";
+let TR_DB = {stats:{}, off:{}};
+try{
+  const raw = localStorage.getItem(LS_KEY);
+  if(raw){ const d = JSON.parse(raw); TR_DB.stats = d.stats || {}; TR_DB.off = d.off || {}; }
+}catch(e){}                                  /* приватный режим или file:// без хранилища */
+function trSave(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(TR_DB)); }catch(e){} }
+
+/* 1 вариант, 2 варианта, 5 вариантов */
+function plural(n, one, few, many){
+  const a = Math.abs(n) % 100, b = a % 10;
+  return n + " " + (a > 10 && a < 20 ? many : b === 1 ? one : b > 1 && b < 5 ? few : many);
+}
+const vkey   = (b,v) => BOOKS[b].id + "/" + v.id;
+const statOf = (b,v) => TR_DB.stats[vkey(b,v)] || {runs:0, clean:0, streak:0, errs:0, last:null};
+const isOff  = (b,v) => { const k = vkey(b,v); return k in TR_DB.off ? !!TR_DB.off[k] : DEFAULT_OFF(v); };
+function setOff(i, off){ TR_DB.off[vkey(bi, VARS[i])] = off ? 1 : 0; trSave(); }
+const activeIdx = () => VARS.map((v,i)=>i).filter(i=>!isOff(bi, VARS[i]));
+const learned   = s => s.streak >= 2;
+
+/* сыгранная линия совпадает с началом варианта */
+const pathFits = (v, path) => v.moves.length >= path.length && path.every((san,i)=>v.moves[i]===san);
+
+/* чем хуже вариант знаешь, тем чаще он выпадает */
+function trWeight(i){
+  const s = statOf(bi, VARS[i]);
+  if(!s.runs)          return 8;
+  if(s.last === "err") return 6;
+  if(s.streak >= 3)    return 1;
+  if(s.streak >= 2)    return 2;
+  return 4;
+}
+function trPick(cands){
+  const w = cands.map(trWeight);
+  let r = Math.random() * w.reduce((a,b)=>a+b, 0);
+  for(let k=0;k<cands.length;k++){ r -= w[k]; if(r <= 0) return cands[k]; }
+  return cands[cands.length-1];
+}
+
+function trRecord(i, errs){
+  const k = vkey(bi, VARS[i]);
+  const st = TR_DB.stats[k] || (TR_DB.stats[k] = {runs:0, clean:0, streak:0, errs:0, last:null});
+  st.runs++; st.errs += errs;
+  if(errs === 0){ st.clean++; st.streak++; st.last = "ok"; }
+  else          { st.streak = 0;           st.last = "err"; }
+  trSave();
+}
+
+/* ---- вход и выход ---- */
+let trTimer = null;
+function closeTrainer(){
+  tr = null; clearTimeout(trTimer);
+  $id("trainbtn").classList.remove("on");
+  $id("trainbtn").textContent = TRAIN_LABEL;
+  $id("sheet").querySelector("summary").textContent = "Все ходы варианта";
+  $id("hint").textContent = HINT_LABEL;
+}
+$id("trainbtn").onclick = ()=>{
+  if(tr){ closeTrainer(); render(); return; }
+  openTr();
+};
+
+function trBegin(target){
+  if(expl) closeExpl();
+  sub = null;
+  const set = activeIdx();
+  if(!set.length) return;
+  tr = {g:new ChessCls(), path:[], target: target != null ? target : trPick(set),
+        errs:0, wrong:null, offbook:null, switched:null, shown:null, illegal:null,
+        last:null, done:false, wait:false, credited:[]};
+  $id("trainbtn").classList.add("on");
+  $id("trainbtn").textContent = "✕ Выйти из тренажёра";
+  trRender();
+  trWhite();
+}
+
+/* ---- ход белых: играем по текущему целевому варианту ---- */
+function trWhite(){
+  if(!tr || tr.done) return;
+  const v = VARS[tr.target];
+  if(tr.path.length >= v.moves.length){ trFinish(); return; }
+  if(tr.g.turn() !== "b"){
+    tr.wait = true; trRender();
+    clearTimeout(trTimer);
+    trTimer = setTimeout(()=>{
+      if(!tr || tr.done) return;
+      const san = VARS[tr.target].moves[tr.path.length];
+      let m = null; try{ m = tr.g.move(san); }catch(e){ m = null; }
+      tr.wait = false;
+      if(!m){ tr.done = true; tr.fatal = san; trRender(); return; }
+      tr.path.push(san); tr.last = m;
+      if(tr.path.length >= VARS[tr.target].moves.length){ trFinish(); return; }
+      trRender();
+    }, 430);
+  }
+}
+
+/* ---- ход пользователя ---- */
+function trDrop(from, to){
+  if(!tr || tr.done || tr.wait || tr.g.turn() !== "b") return "snapback";
+  const v = VARS[tr.target], expect = v.moves[tr.path.length];
+  const pm = expect && expect.match(/=([QRBN])/);      /* превращение — как в книге */
+  let m = null;
+  try{ m = tr.g.move({from, to, promotion: pm ? pm[1].toLowerCase() : "q"}); }catch(e){ m = null; }
+  if(!m){ trSay(null); return "snapback"; }
+
+  if(m.san === expect){ trAccept(m, null); return; }
+
+  /* ход не по цели, но, может быть, он есть в другом варианте из этой же позиции */
+  const fits = i => pathFits(VARS[i], tr.path) && VARS[i].moves[tr.path.length] === m.san;
+  const alts = activeIdx().filter(i => i !== tr.target && fits(i));
+  if(alts.length){ trAccept(m, trPick(alts)); return; }
+
+  /* ход книжный, но его вариант выключен из тренировки — ошибкой не считаем */
+  const off = VARS.map((v,i)=>i).filter(i => i !== tr.target && fits(i));
+  tr.g.undo();
+  if(off.length){
+    tr.offbook = {played:m.san, num:trNum(tr.path.length), title:VARS[off[0]].title};
+    tr.wrong = null;
+    trRender();
+    return "snapback";
+  }
+  tr.errs++;
+  tr.offbook = null;
+  tr.wrong = {played:m.san, num:trNum(tr.path.length)};
+  trRender();
+  if(navigator.vibrate) navigator.vibrate([25,60,25]);
+  return "snapback";
+}
+function trAccept(m, newTarget){
+  tr.path.push(m.san); tr.last = m; tr.wrong = null; tr.shown = null; tr.offbook = null;
+  tr.switched = newTarget != null ? VARS[newTarget].title : null;
+  if(newTarget != null) tr.target = newTarget;
+  if(tr.path.length >= VARS[tr.target].moves.length){ trFinish(); return; }
+  trRender();
+  trWhite();
+}
+/* коротко подсветить, что ход вообще нелегальный (за ошибку это не считаем) */
+let trSayTimer = null;
+function trSay(msg){
+  if(!tr) return;
+  tr.illegal = msg === null ? "так не сходить" : msg;
+  clearTimeout(trSayTimer);
+  trSayTimer = setTimeout(()=>{ if(tr){ tr.illegal = null; trRender(); } }, 1800);
+  setTimeout(trRender, 0);
+}
+
+/* ---- подсказка и сдача ---- */
+function trShow(){
+  if(!tr || tr.done || tr.wait) return;
+  if(!tr.wrong) tr.errs++;                 /* попросил ход сам — тоже не выучено */
+  const san = VARS[tr.target].moves[tr.path.length];
+  let m = null; try{ m = tr.g.move(san); }catch(e){ m = null; }
+  if(!m){ tr.done = true; tr.fatal = san; trRender(); return; }
+  tr.path.push(san); tr.last = m; tr.wrong = null; tr.switched = null; tr.offbook = null; tr.shown = san;
+  if(tr.path.length >= VARS[tr.target].moves.length){ trFinish(); return; }
+  trRender(); trWhite();
+}
+function trGiveUp(){
+  if(!tr) return;
+  trRecord(tr.target, Math.max(1, tr.errs));
+  closeTrainer(); trBegin();
+}
+
+function trFinish(){
+  tr.done = true; tr.wait = false; clearTimeout(trTimer);
+  /* засчитываем все варианты, чьи ходы в точности совпали с сыгранной линией */
+  const done = activeIdx().filter(i => VARS[i].moves.length === tr.path.length
+                                    && pathFits(VARS[i], tr.path));
+  if(!done.includes(tr.target)) done.push(tr.target);
+  done.forEach(i => trRecord(i, tr.errs));
+  tr.credited = done;
+  buildOpts();
+  trRender();
+}
+
+/* ---- отрисовка ---- */
+const trNum = len => (len % 2 ? Math.ceil((len+1)/2) + "…" : (len/2 + 1) + ".");
+function trLine(){
+  const h = tr.g.history(), out = [];
+  for(let i=0;i<h.length;i++){
+    const mv = (i % 2 ? "" : (i/2 + 1) + ".") + h[i];
+    out.push(i === h.length-1 ? "<i>"+mv+"</i>" : "<b>"+mv+"</b>");
+  }
+  return out.join(" ");
+}
+function trRender(){
+  if(!tr) return;
+  const v = VARS[tr.target];
+  board.position(tr.g.fen());
+  setTimeout(paintHL, 30);
+
+  $id("pch").textContent = "тренировка · " + BOOKS[bi].short;
+  $id("pnm").textContent = tr.done ? v.title : "вариант скрыт";
+  $id("varpos").textContent = tr.done
+    ? `${v.chapter} · ошибок ${tr.errs}`
+    : `ход ${Math.floor(tr.path.length/2)+1} · ошибок ${tr.errs} · в тренировке ${activeIdx().length}`;
+
+  if(tr.done){ paintGauge(v.cp ? v.cp[tr.path.length] : null, v.tag); }
+  else { paintGauge(null, "🎓"); }
+  $id("hint").textContent = tr.done ? "вариант пройден"
+                          : tr.wait ? "белые отвечают"
+                          : "тащи фигуру за чёрных";
+
+  const note = $id("note"), subs = $id("subs");
+  $id("missed").classList.remove("on");
+  subs.innerHTML = "";
+  const add = (cls, txt, fn)=>{ const b=document.createElement("button");
+    if(cls) b.className=cls; b.textContent=txt; b.onclick=fn; subs.appendChild(b); return b; };
+
+  if(tr.fatal){
+    note.className = "note err";
+    note.innerHTML = `<div class="head"><b>сбой</b></div>`+
+      `<p>Ход <b>${tr.fatal}</b> из варианта «${v.title}» не встал на доску. Это ошибка в данных книги, а не в твоей игре.</p>`;
+    add("go", "Другой вариант", ()=>trBegin());
+    add(null, "Настройка тренировки", openTr);
+  } else if(tr.done){
+    const good = tr.errs === 0;
+    note.className = "note " + (good ? "ok" : "err");
+    const errWord = plural(tr.errs, "ошибка", "ошибки", "ошибок");
+    const st = statOf(bi, v);
+    note.innerHTML =
+      `<div class="head"><b>${good ? "вариант пройден" : "вариант пройден с ошибками"}</b>`+
+      `<span class="cnt${good?"":" bad"}">${good ? "чисто" : errWord}</span></div>`+
+      `<p><b>${v.title}</b><br>${v.chapter}<br><span style="color:var(--mut)">${v.eval}</span></p>`+
+      `<div class="trline">${trLine()}</div>`+
+      `<p style="margin-top:8px;color:var(--mut);font-size:13px">`+
+      `чисто ${st.clean} из ${st.runs}${learned(st) ? " · <span style=\"color:#7FBF8E\">выучен</span>" : ""}`+
+      (tr.credited.length>1 ? ` · заодно засчитан ещё `+
+        plural(tr.credited.length-1,"вариант","варианта","вариантов") : "")+`</p>`;
+    add("go", "Ещё вариант", ()=>trBegin());
+    add(null, "Повторить этот", ()=>trBegin(tr.target));
+    add(null, "Разобрать в книге", ()=>{ const t=tr.target; closeTrainer(); vi=t; pi=0; sub=null; render(); });
+    add(null, "Настройка тренировки", openTr);
+  } else if(tr.offbook){
+    note.className = "note";
+    note.innerHTML =
+      `<div class="head"><b>тренажёр</b><span class="cnt">другой вариант</span></div>`+
+      `<p><b>${tr.offbook.num}${tr.offbook.played}</b> — ход книжный, но вариант «${tr.offbook.title}» `+
+      `сейчас выключен из тренировки. Сыграй по-другому или включи его в настройке.</p>`+
+      `<div class="trline">${trLine()}</div>`;
+    add(null, "Показать ход", trShow);
+    add(null, "Не знаю, дальше", trGiveUp);
+    add(null, "Настройка тренировки", openTr);
+  } else if(tr.wrong){
+    note.className = "note err";
+    note.innerHTML =
+      `<div class="head"><b>тренажёр</b><span class="cnt bad">не то</span></div>`+
+      `<p>✕ <b>${tr.wrong.num}${tr.wrong.played}</b> — такого хода нет в репертуаре из этой позиции. `+
+      `Попробуй ещё или посмотри ответ.</p>`+
+      `<div class="trline">${trLine()}</div>`;
+    add(null, "Показать ход", trShow);
+    add(null, "Не знаю, дальше", trGiveUp);
+    add(null, "Настройка тренировки", openTr);
+  } else {
+    note.className = "note";
+    const state = tr.illegal ? tr.illegal
+                : tr.wait    ? "белые думают"
+                : tr.switched ? "переключились"
+                : "твой ход за чёрных";
+    note.innerHTML =
+      `<div class="head"><b>тренажёр</b><span class="cnt${tr.illegal?" bad":""}">${state}</span></div>`+
+      (tr.switched
+        ? `<p style="color:#7FBF8E">✓ тоже книжный ход — дальше тренируем вариант «${tr.switched}»</p>`
+        : tr.shown
+        ? `<p style="color:var(--mut)">Подсказка: сыграно <b>${tr.shown}</b>.</p>`
+        : `<p style="color:var(--mut)">Приложение играет за белых по одному из вариантов книги. `+
+          `Любой книжный ответ засчитывается.</p>`)+
+      `<div class="trline">${tr.path.length ? trLine() : "—"}</div>`;
+    add(null, "Показать ход", trShow);
+    add(null, "Не знаю, дальше", trGiveUp);
+    add(null, "Настройка тренировки", openTr);
+  }
+  $id("ev").className = "val" + (tr.wrong || (tr.done && tr.errs) ? " bad" : "");
+  $id("ev").textContent = tr.done ? v.eval : (tr.wrong ? "ошибка" : "тренировка");
+
+  /* лист ходов -> сыгранная линия */
+  const box = $id("rows"); box.innerHTML = "";
+  $id("sheet").querySelector("summary").textContent =
+    tr.done ? "Вариант целиком" : `Сыграно ходов: ${tr.path.length}`;
+  const src = tr.done ? VARS[tr.target].moves : tr.path;
+  for(let i=0;i<src.length;i+=2){
+    const row=document.createElement("div"); row.className="row";
+    const num=document.createElement("div"); num.className="n"; num.textContent=i/2+1;
+    row.appendChild(num);
+    [i,i+1].forEach(k=>{
+      const b=document.createElement("button");
+      if(k<src.length){ b.textContent=src[k]; b.disabled=true; }
+      else { b.className="empty"; b.textContent="—"; b.disabled=true; }
+      row.appendChild(b);
+    });
+    box.appendChild(row);
+  }
+
+  ["first","prev","next","last"].forEach(id=>$id(id).disabled = true);
+  $id("next").classList.remove("coming");
+}
+
+/* ---- настройка: что тренируем и как идут дела ---- */
+function openTr(){ $id("trmodal").classList.add("on"); trOpts(); trSum(); }
+function closeTr(){ $id("trmodal").classList.remove("on"); }
+$id("trclose").onclick = closeTr;
+$id("trmodal").onclick = e=>{ if(e.target===$id("trmodal")) closeTr(); };
+$id("trstart").onclick = ()=>{ closeTr(); trBegin(); };
+$id("trall").onclick   = ()=>{ VARS.forEach((v,i)=>setOff(i,false)); trOpts(); trSum(); };
+$id("trnone").onclick  = ()=>{ VARS.forEach((v,i)=>setOff(i,true));  trOpts(); trSum(); };
+$id("trweak").onclick  = ()=>{ VARS.forEach((v,i)=>setOff(i, learned(statOf(bi,v)))); trOpts(); trSum(); };
+$id("trreset").onclick = ()=>{
+  if(!confirm("Стереть статистику тренировок по этой книге?")) return;
+  VARS.forEach(v=>delete TR_DB.stats[vkey(bi,v)]);
+  trSave(); trOpts(); trSum();
+};
+
+function badgeOf(s){
+  if(!s.runs) return {t:"—", c:""};
+  const r = s.clean + "/" + s.runs;
+  if(learned(s))       return {t:"✓ "+r, c:"ok"};
+  if(s.last === "err") return {t:"✕ "+r, c:"bad"};
+  return {t:"• "+r, c:"mid"};
+}
+function trSum(){
+  const on = activeIdx();
+  const ok    = on.filter(i=>learned(statOf(bi,VARS[i]))).length;
+  const bad   = on.filter(i=>statOf(bi,VARS[i]).last === "err").length;
+  const fresh = on.filter(i=>!statOf(bi,VARS[i]).runs).length;
+  const dflt = VARS.filter(v=>v.off).length;
+  $id("trsum").innerHTML =
+    `${BOOKS[bi].short}: в тренировке <b>${on.length}</b> из ${VARS.length}<br>`+
+    `выучено <b>${ok}</b> · с ошибками <b>${bad}</b> · ещё не пробовал <b>${fresh}</b>`+
+    (dflt ? `<br><span style="opacity:.75">по умолчанию вне тренировки `+
+            `${plural(dflt,"вариант","варианта","вариантов")}: партии целиком `+
+            `и линии, где ошибается чёрный</span>` : "");
+  $id("trstart").disabled = !on.length;
+  $id("trstart").textContent = on.length ? "Начать тренировку" : "Нечего тренировать";
+}
+function trOpts(){
+  const box = $id("tropts"); box.innerHTML = ""; let chapter = null;
+  VARS.forEach((v,i)=>{
+    if(v.chapter !== chapter){
+      chapter = v.chapter;
+      const ch = chapter;
+      const h = document.createElement("div"); h.className = "trgrp";
+      const s = document.createElement("span"); s.textContent = ch;
+      const b = document.createElement("button");
+      const idx = VARS.map((x,k)=>[x,k]).filter(([x])=>x.chapter===ch).map(([,k])=>k);
+      const anyOn = idx.some(k=>!isOff(bi,VARS[k]));
+      b.textContent = anyOn ? "выключить главу" : "включить главу";
+      b.onclick = ()=>{ idx.forEach(k=>setOff(k, anyOn)); trOpts(); trSum(); };
+      h.appendChild(s); h.appendChild(b); box.appendChild(h);
+    }
+    const on = !isOff(bi, v), bd = badgeOf(statOf(bi, v));
+    const b = document.createElement("button");
+    b.className = "tropt"; b.setAttribute("aria-pressed", on+"");
+    b.innerHTML = `<span class="chk">${on?"✓":"○"}</span>`+
+      `<span class="cap"><span class="t">${v.title}</span>`+
+      `<span class="mv">${v.off ? "не для заучивания · " : ""}${v.line}</span></span>`+
+      `<span class="bdg ${bd.c}">${bd.t}</span>`;
+    b.onclick = ()=>{
+      const off = !isOff(bi, v); setOff(i, off);
+      b.setAttribute("aria-pressed", (!off)+"");
+      b.querySelector(".chk").textContent = off ? "○" : "✓";
+      trSum();
+    };
+    box.appendChild(b);
+  });
+}
+
 /* ---- навигация ---- */
 const go = d => {
+  if(tr) return;
   if(expl){ if(d<0 && expl.g.history().length){ expl.g.undo(); expl.last=null; expl.err=null; renderExpl(); } return; }
   if(sub){
     const ni = sub.i + d;
@@ -735,20 +1194,27 @@ function nextNote(dir){
 }
 $id("next").onclick=()=>go(1);
 $id("prev").onclick=()=>go(-1);
-$id("first").onclick=()=>{ if(expl){ expl.g.reset(); expl.last=null; expl.err=null; renderExpl(); return; } if(sub){sub=null;} else {pi=0;} render();};
-$id("last").onclick=()=>{ if(expl) return; if(sub){sub.i=sub.plies.length-1;} else {pi=VARS[vi].plies.length-1;} render();};
-$id("flip").onclick=()=>{board.flip(); if(expl){renderExpl();} else {render();setTimeout(paintHL,30);} };
+$id("first").onclick=()=>{ if(tr) return; if(expl){ expl.g.reset(); expl.last=null; expl.err=null; renderExpl(); return; } if(sub){sub=null;} else {pi=0;} render();};
+$id("last").onclick=()=>{ if(expl||tr) return; if(sub){sub.i=sub.plies.length-1;} else {pi=VARS[vi].plies.length-1;} render();};
+$id("flip").onclick=()=>{board.flip(); if(expl){renderExpl();} else if(tr){trRender();} else {render();setTimeout(paintHL,30);} };
 
 let tx=0,ty=0;
 const bw=$id("board");
 bw.addEventListener("touchstart",e=>{tx=e.changedTouches[0].clientX;ty=e.changedTouches[0].clientY;},{passive:true});
 bw.addEventListener("touchend",e=>{
   const dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty;
-  if(Math.abs(dx)>40 && Math.abs(dx)>Math.abs(dy)) go(dx<0?1:-1);
+  if(!tr && Math.abs(dx)>40 && Math.abs(dx)>Math.abs(dy)) go(dx<0?1:-1);
 },{passive:true});
 
 document.addEventListener("keydown",e=>{
   if($id("modal").classList.contains("on")){ if(e.key==="Escape") closeModal(); return; }
+  if($id("trmodal").classList.contains("on")){ if(e.key==="Escape") closeTr(); return; }
+  if(tr){
+    if(e.key==="Escape"){ closeTrainer(); render(); e.preventDefault(); }
+    else if(e.key==="Enter" && tr.done){ trBegin(); e.preventDefault(); }
+    else if(e.key>="1" && e.key<="9"){ const i=+e.key-1; if(i<BOOKS.length && i!==bi){ setBook(i); e.preventDefault(); } }
+    return;
+  }
   if(expl && e.key==="Escape"){ toggleExpl(); e.preventDefault(); return; }
   if(expl && e.key!=="ArrowLeft"){ return; }
   if(e.key==="ArrowRight"){go(1);e.preventDefault();}
@@ -758,6 +1224,7 @@ document.addEventListener("keydown",e=>{
   else if(e.key==="Home"){pi=0;render();e.preventDefault();}
   else if(e.key==="End"){pi=VARS[vi].plies.length-1;render();e.preventDefault();}
   else if(e.key==="c"||e.key==="C"||e.key==="с"||e.key==="С"){nextNote(e.shiftKey?-1:1);e.preventDefault();}
+  else if(e.key==="t"||e.key==="T"||e.key==="е"||e.key==="Е"){openTr();e.preventDefault();}
   else if(e.key>="1" && e.key<="9"){
     const i=+e.key-1;
     if(i<BOOKS.length && i!==bi){ setBook(i); e.preventDefault(); }

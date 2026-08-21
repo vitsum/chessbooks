@@ -46,6 +46,47 @@ for v in V:
         if hit:
             parts.append(txt[last:]); v["notes"][ply] = "".join(parts)
 
+# ================= что по умолчанию вне тренировки =================
+# Тренажёр просит повторить ходы чёрных, поэтому две группы вариантов он
+# по умолчанию не берёт (в приложении их можно включить руками):
+#   * партии целиком — их не учат наизусть;
+#   * линии, где показан плохой ход ЗА ЧЁРНЫХ («Ловушка: 4…Kf6?») — просить
+#     повторить такой ход нельзя. Плохие ходы белых наоборот полезны: чёрные
+#     учатся их наказывать, такие варианты остаются в тренировке.
+import re as _re
+_NUMMOVE = _re.compile(r"^(\d+)(\.\.\.|…|\.)(.*)$")
+_SAN     = _re.compile(r"^(?:O-O(?:-O)?|[KQRBN]?[a-h]?[1-8]?x?[a-h][1-8](?:=[QRBN])?)"
+                       r"[+#]?([?!]*)$")
+
+def _black_blunder(title):
+    """В заголовке варианта плохим помечен ход чёрных?"""
+    side = None
+    for w in title.replace("(", " ").replace(")", " ").split():
+        m = _NUMMOVE.match(w)
+        if m:
+            side, body = ("b" if m.group(2) in ("…", "...") else "w"), m.group(3)
+        else:
+            body = w
+            side = "b" if side == "w" else None      # ход без номера идёт за белым
+        sm = _SAN.match(body)
+        if not sm:
+            side = side if m else None
+            continue
+        if side == "b" and "?" in sm.group(1).replace("!?", ""):
+            return True
+    return False
+
+_off = []
+for v in V:
+    why = ("партия целиком" if "Партии целиком" in v["chapter"]
+           else "ошибка за чёрных" if _black_blunder(v["title"]) else None)
+    v["off"] = bool(why)
+    if why: _off.append((v["id"], why, v["title"]))
+if _off:
+    print("вне тренировки по умолчанию:", len(_off))
+    for i, why, t in _off:
+        print(f"    {i:16} {why:18} {t}")
+
 # ================= оценки Stockfish =================
 import os
 if os.path.exists(CP_IN):
