@@ -409,7 +409,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
 <div class="modes">
   <button class="explbtn" id="explbtn">⚑ Проводник — двигать фигуры и искать позицию в книге</button>
   <button class="explbtn" id="trainbtn">🎓 Тренажёр — разыграть варианты за чёрных</button>
-  <button class="explbtn" id="srsbtn">🔁 Повторение — карточки по всем книгам</button>
+  <button class="explbtn" id="srsbtn">🔁 Карточки — повторение по этой книге</button>
 </div>
 <div class="varpos" id="varpos"></div>
 
@@ -432,7 +432,8 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
         <label>карточек за сессию
           <input type="number" id="srssize" min="5" max="80" step="5"></label>
       </div>
-      <p class="srsnote">Прогресс хранится в этом браузере и здесь же остаётся.</p>
+      <p class="srsnote">Карточки берутся из открытой книги, и счёт у каждой книги свой.
+        Прогресс хранится в этом браузере и здесь же остаётся.</p>
       <div class="srsiorow">
         <button id="srsreset" class="danger">стереть прогресс</button>
       </div>
@@ -731,6 +732,7 @@ function setBook(i){
   if(expl) closeExpl();
   if(tr) closeTrainer();
   bi = i; VARS = BOOKS[bi].vars; vi = 0; pi = 0; sub = null;
+  $id("srsbtn").textContent = srsLabel();
   paintBook(); buildOpts(); render();
 }
 function paintBook(){
@@ -1523,22 +1525,31 @@ const today   = () => Math.floor((Date.now() - new Date().getTimezoneOffset()*60
 const dayStr  = () => new Date(Date.now() - new Date().getTimezoneOffset()*60000)
                         .toISOString().slice(0,10);
 
-let SRS = {v:1, opts:{newPerDay:8, sessionMax:20}, day:"", newDone:0, cards:{}};
+/* Счёт у каждой книги свой: и колода, и дневной лимит, и статистика, и сброс.
+   legacy — карточки из первой версии, где колода была общая: раскладываем их по книгам
+   по мере того, как книгу открывают, чтобы уже накопленное не пропало. */
+let SRS = {v:2, opts:{newPerDay:8, sessionMax:20}, books:{}, legacy:null};
 try{
   const raw = localStorage.getItem(SRS_KEY);
   if(raw){
     const d = JSON.parse(raw);
-    if(d && d.cards){
-      SRS.cards = d.cards;
-      SRS.opts  = Object.assign(SRS.opts, d.opts || {});
-      SRS.day   = d.day || ""; SRS.newDone = d.newDone || 0;
+    if(d && typeof d === "object"){
+      SRS.opts = Object.assign(SRS.opts, d.opts || {});
+      if(d.books) SRS.books = d.books;
+      else if(d.cards) SRS.legacy = d.cards;   /* состояние v1 — общая колода */
     }
   }
 }catch(e){}                                   /* приватный режим или file:// без хранилища */
 function srsSave(){ try{ localStorage.setItem(SRS_KEY, JSON.stringify(SRS)); }catch(e){} }
+const bookKey = () => BOOKS[bi].id;
+function bookState(){
+  const k = bookKey();
+  return SRS.books[k] || (SRS.books[k] = {day:"", newDone:0, cards:{}});
+}
 function srsNewLeft(){
-  if(SRS.day !== dayStr()){ SRS.day = dayStr(); SRS.newDone = 0; }
-  return Math.max(0, SRS.opts.newPerDay - SRS.newDone);
+  const st = bookState();
+  if(st.day !== dayStr()){ st.day = dayStr(); st.newDone = 0; }
+  return Math.max(0, SRS.opts.newPerDay - st.newDone);
 }
 
 /* ---- опознание карточки: позиция без счётчиков ходов плюс сам ход ---- */
@@ -1553,32 +1564,80 @@ function cardId(fen, san){
   return a.toString(36) + b.toString(36);
 }
 
-/* ---- колода: строится один раз, при первом входе в режим ---- */
-let CARDS = null, CARD_BY_ID = null;
+/* Хороший ли это ход или показанная ошибка. Явного признака в книгах не было — подписи
+   у побочных линий это свободный текст, а оценки движка местами расходятся с тем, что
+   пишет автор. Поэтому три источника по убыванию доверия:
+     1) флаг alt/bad, проставленный в книге вручную (четвёртый элемент в SUBS);
+     2) знаки самого автора в подписи: «?» — плохо, «!» и «!?» — играбельно;
+     3) оценка движка: принимаем, если ход теряет немного и сразу, и дальше по линии. */
+const BADWORDS = /\bплох|почему не|нельзя|ошибк|зевок|не работает/i;
+function subIsGood(cap, kind, lossFirst, lossWorst){
+  if(kind) return kind === "alt";
+  if(/!\?/.test(cap)) return true;
+  if(/\?/.test(cap))  return false;
+  if(/!/.test(cap))   return true;
+  if(BADWORDS.test(cap)) return false;
+  return lossFirst <= 50 && lossWorst <= 120;
+}
+
+/* ---- колода: по текущей книге, строится при первом входе и запоминается ---- */
+let DECKS = {}, CARDS = null, CARD_BY_ID = null;
 function buildDeck(){
-  if(CARDS) return CARDS;
-  CARDS = []; CARD_BY_ID = {};
-  BOOKS.forEach((bk,b)=>{
-    bk.vars.forEach(v=>{
-      if(v.off) return;                       /* партии целиком и чужие ошибки не спрашиваем */
-      const g = new ChessCls();
-      for(let i=0;i<v.moves.length;i++){
-        const san = v.moves[i];
-        if(g.turn() === bk.side){
-          const fen = g.fen(), id = cardId(fen, san);
-          if(!CARD_BY_ID[id]){
-            const c = {id, b, vid:v.id, ply:i, fen, san, side:bk.side,
-                       note: v.notes[String(i+1)] || "",
-                       prio: v.prio || 0, title: v.title, chapter: v.chapter,
-                       short: bk.short,
-                       pre: v.moves.slice(0, Math.min(i,4)).join(" ")};
-            CARD_BY_ID[id] = c; CARDS.push(c);
-          }
+  const key = bookKey();
+  if(DECKS[key]){ CARDS = DECKS[key].list; CARD_BY_ID = DECKS[key].by; return CARDS; }
+  const list = [], by = {};
+  const bk = BOOKS[bi], b = bi;
+  bk.vars.forEach(v=>{
+    if(v.off) return;                         /* партии целиком и чужие ошибки не спрашиваем */
+    const g = new ChessCls();
+    for(let i=0;i<v.moves.length;i++){
+      const san = v.moves[i];
+      if(g.turn() === bk.side){
+        const fen = g.fen(), id = cardId(fen, san);
+        if(!by[id]){
+          const c = {id, b, vid:v.id, ply:i, fen, san, side:bk.side,
+                     note: v.notes[String(i+1)] || "",
+                     prio: v.prio || 0, title: v.title, chapter: v.chapter,
+                     short: bk.short, alts: [],
+                     pre: v.moves.slice(0, Math.min(i,4)).join(" ")};
+          /* другие ходы, которые книга считает приемлемыми на этой же развилке */
+          const lst = (v.subs && v.subs[String(i+1)]) || [];
+          const mainCp = (v.cp && v.cp.length > i+1) ? v.cp[i+1] : null;
+          lst.forEach(sv=>{
+            const p0 = sv.plies && sv.plies[0];
+            if(!p0) return;
+            const t = new ChessCls(fen);
+            let mv = null; try{ mv = t.move(p0.san); }catch(e){ mv = null; }
+            /* побочная линия начинается из этой же позиции — значит это альтернатива
+               нашему ходу, а не ответ соперника */
+            if(!mv || t.fen() !== p0.fen) return;
+            let lf = 0, lw = 0;
+            if(mainCp !== null && sv.cp && sv.cp.length > 1 && sv.cp[1] !== null){
+              const vals = sv.cp.slice(1).filter(x=>x !== null && x !== undefined);
+              const worst = vals.length ? (bk.side === "w" ? Math.min.apply(null, vals)
+                                                           : Math.max.apply(null, vals)) : sv.cp[1];
+              lf = bk.side === "w" ? mainCp - sv.cp[1] : sv.cp[1] - mainCp;
+              lw = bk.side === "w" ? mainCp - worst    : worst    - mainCp;
+            }
+            if(subIsGood(sv.cap || "", sv.kind, lf, lw)) c.alts.push({san:p0.san, cap:sv.cap||""});
+          });
+          by[id] = c; list.push(c);
         }
-        try{ g.move(san); }catch(e){ break; }  /* битую линию просто обрываем */
       }
-    });
+      try{ g.move(san); }catch(e){ break; }    /* битую линию просто обрываем */
+    }
   });
+  /* подбираем прогресс из общей колоды первой версии */
+  if(SRS.legacy){
+    const st = bookState();
+    list.forEach(c=>{
+      if(!st.cards[c.id] && SRS.legacy[c.id]){ st.cards[c.id] = SRS.legacy[c.id]; delete SRS.legacy[c.id]; }
+    });
+    if(!Object.keys(SRS.legacy).length) SRS.legacy = null;
+    srsSave();
+  }
+  DECKS[key] = {list, by};
+  CARDS = list; CARD_BY_ID = by;
   return CARDS;
 }
 /* Чем чаще развилка встречалась в реальных партиях, тем раньше карточка идёт в оборот.
@@ -1607,7 +1666,7 @@ function srsSchedule(st, grade){
   }
   st.g = grade;
 }
-const srsStat = id => SRS.cards[id];
+const srsStat = id => bookState().cards[id];
 function whenBack(st){
   if(!st || !st.i) return "вернётся сегодня";
   const d = st.d - today();
@@ -1620,12 +1679,13 @@ function whenBack(st){
 function srsPlan(){
   buildDeck();
   const t = today(), due = [], fresh = [];
+  const mine = bookState().cards;
   CARDS.forEach(c=>{
-    const st = SRS.cards[c.id];
+    const st = mine[c.id];
     if(st){ if(st.d <= t) due.push(c); } else fresh.push(c);
   });
   due.sort((x,y)=>{
-    const X = SRS.cards[x.id], Y = SRS.cards[y.id];
+    const X = mine[x.id], Y = mine[y.id];
     return (t - Y.d) - (t - X.d) || (Y.l||0) - (X.l||0);
   });
   fresh.sort((x,y)=> cardWeight(y) - cardWeight(x));
@@ -1636,20 +1696,15 @@ function buildSession(){
   const max = SRS.opts.sessionMax;
   const take = due.slice(0, max);
   const room = Math.max(0, max - take.length);
-  /* Два ограничения на новые карточки. Не больше двух из одного варианта — иначе весь
-     заход уходит в начало одной линии. И не больше 70% из одной книги: «Мои промахи»
-     по весу перебивают всё остальное, но повторение должно идти по всем книгам, а не
-     упираться в одну на неделю вперёд. */
-  const perVar = {}, perBook = {}, news = [];
+  /* Не больше двух новых карточек из одного варианта за сессию: иначе весь заход
+     уходит в начало одной линии, а это ровно та интерференция, которой мы избегаем. */
+  const perVar = {}, news = [];
   const limit = Math.min(room, srsNewLeft());
-  const bookCap = Math.max(1, Math.ceil(limit * 0.7));
   for(const c of fresh){
     if(news.length >= limit) break;
-    const kv = c.b + "/" + c.vid;
+    const kv = c.vid;
     if((perVar[kv] || 0) >= 2) continue;
-    if((perBook[c.b] || 0) >= bookCap) continue;
     perVar[kv] = (perVar[kv]||0) + 1;
-    perBook[c.b] = (perBook[c.b]||0) + 1;
     news.push(c);
   }
   return spreadOut(take.concat(news));
@@ -1659,7 +1714,7 @@ function spreadOut(list){
   const pool = list.slice(), out = [];
   let prev = null;
   while(pool.length){
-    let k = pool.findIndex(c => !prev || (c.b !== prev.b && c.pre !== prev.pre));
+    let k = pool.findIndex(c => !prev || (c.vid !== prev.vid && c.pre !== prev.pre));
     if(k < 0) k = pool.findIndex(c => !prev || c.pre !== prev.pre);
     if(k < 0) k = 0;
     out.push(pool[k]); prev = pool[k]; pool.splice(k, 1);
@@ -1668,20 +1723,22 @@ function spreadOut(list){
 }
 
 /* ---- сам режим ---- */
+const srsLabel = () => "🔁 Карточки — повторение по книге «" + BOOKS[bi].short + "»";
 function srsOpen(){
   buildDeck();
   const {due, fresh} = srsPlan();
   const left = srsNewLeft();
   const n = Math.min(SRS.opts.sessionMax, due.length + Math.min(fresh.length, left));
-  const known = Object.keys(SRS.cards).length;
+  const known = Object.keys(bookState().cards).length;
+  const bname = BOOKS[bi].short;
   $id("srsplan").innerHTML = n
     ? `<span class="big">${plural(n, "карточка", "карточки", "карточек")}</span>` +
-      `на сегодня: <b>${due.length}</b> на повтор` +
+      `на сегодня по книге «${bname}»: <b>${due.length}</b> на повтор` +
       (Math.min(fresh.length, left) ? ` и <b>${Math.min(fresh.length, left)}</b> новых` : "") +
-      `.<br>Всего в колоде ${CARDS.length}, начато ${known}.`
-    : `<span class="big">на сегодня всё</span>Повторять сейчас нечего.` +
+      `.<br>В этой книге ${CARDS.length} карточек, начато ${known}.`
+    : `<span class="big">на сегодня всё</span>По книге «${bname}» повторять нечего.` +
       (fresh.length ? ` Новые карточки откроются завтра — или поднимите дневной лимит ниже.` : "") +
-      `<br>Всего в колоде ${CARDS.length}, начато ${known}.`;
+      `<br>В этой книге ${CARDS.length} карточек, начато ${known}.`;
   $id("srsstart").disabled = !n;
   $id("srsstart").textContent = n ? "Начать" : "Нечего повторять";
   $id("srsnew").value  = SRS.opts.newPerDay;
@@ -1707,14 +1764,14 @@ function srsBegin(){
 function srsQuitQuiet(){                       /* только гасит режим, ничего не рисует */
   srs = null;
   $id("srsbtn").classList.remove("on");
-  $id("srsbtn").textContent = "🔁 Повторение — карточки по всем книгам";
+  $id("srsbtn").textContent = srsLabel();
   $id("srsbar").classList.remove("on");
   $id("hint").textContent = HINT_LABEL;
 }
 function srsQuit(){
   srs = null;
   $id("srsbtn").classList.remove("on");
-  $id("srsbtn").textContent = "🔁 Повторение — карточки по всем книгам";
+  $id("srsbtn").textContent = srsLabel();
   $id("srsbar").classList.remove("on");
   $id("hint").textContent = HINT_LABEL;
   render();
@@ -1748,7 +1805,10 @@ function srsNext(){
   note.innerHTML = `<div class="head"><b>карточка ${srs.i+1}</b>` +
     `<span class="cnt">${srs.card.short}</span></div>` +
     `<div class="txt">Сделайте ход, который стоит в книге. Одна попытка: неверный ход
-     вернёт карточку в конец сегодняшней очереди.</div>`;
+     вернёт карточку в конец сегодняшней очереди.` +
+    ((srs.card.alts && srs.card.alts.length)
+      ? ` Здесь книга допускает не один ход — засчитается любой из них.` : ``) +
+    `</div>`;
 }
 function srsBar(){
   if(!srs) return;
@@ -1775,20 +1835,24 @@ function srsMove(from, to){
   let m = null;
   try{ m = srs.g.move({from, to, promotion: pm ? pm[1].toLowerCase() : "q"}); }catch(e){ m = null; }
   if(!m){ srs.bad = 1; srsAnswer(null); return "snapback"; }
-  if(m.san !== srs.card.san){ const bad = m.san; srs.g.undo(); srs.bad = 1; srsAnswer(bad); return "snapback"; }
-  srsAnswer(m.san);
+  const alt = (srs.card.alts || []).find(a => a.san === m.san);
+  if(m.san === srs.card.san){ srsAnswer(m.san); return; }
+  if(alt){ srs.g.undo(); srsAnswer(m.san, alt); return "snapback"; }
+  const bad = m.san; srs.g.undo(); srs.bad = 1; srsAnswer(bad);
+  return "snapback";
 }
 
-function srsAnswer(played){
-  const c = srs.card, ok = played === c.san && !srs.bad && !srs.shown;
+function srsAnswer(played, alt){
+  const c = srs.card, ok = (played === c.san || !!alt) && !srs.bad && !srs.shown;
   const ms = Date.now() - srs.t0;
   srs.answered = true;
-  const st = SRS.cards[c.id] || (SRS.cards[c.id] = {e:250, i:0, d:today(), n:0, l:0, t:0});
+  const mine = bookState().cards;
+  const st = mine[c.id] || (mine[c.id] = {e:250, i:0, d:today(), n:0, l:0, t:0});
   const first = !st.n && !st.l;
   st.t = st.t ? Math.round(st.t*0.7 + ms*0.3) : ms;
   const grade = ok ? srsGrade(ms) : 0;
   srsSchedule(st, grade);
-  if(first){ SRS.day = dayStr(); SRS.newDone = (SRS.newDone||0) + 1; }
+  if(first){ const bs = bookState(); bs.day = dayStr(); bs.newDone = (bs.newDone||0) + 1; }
   srsSave();
 
   srs.done++;
@@ -1798,21 +1862,23 @@ function srsAnswer(played){
   }
   /* показываем правильный ход на доске */
   const g2 = new ChessCls(c.fen);
-  let mv = null; try{ mv = g2.move(c.san); }catch(e){}
+  let mv = null; try{ mv = g2.move(alt ? played : c.san); }catch(e){}
   if(mv){ srs.last = mv; board.position(g2.fen()); setTimeout(paintHL, 30); }
   srsBar();
 
   const when = ok ? whenBack(st) : "вернётся в этой сессии";
   const secs = (ms/1000).toFixed(1).replace(".", ",");
   const head = ok
-    ? `<span class="ok">✓ верно</span><span class="mv">${c.san}</span>` +
-      `<span class="when">${secs} с · ${when}</span>`
+    ? `<span class="ok">✓ верно</span><span class="mv">${played}</span>` +
+      (alt ? `<span class="when">книга ведёт ${c.san} · ${secs} с · ${when}</span>`
+           : `<span class="when">${secs} с · ${when}</span>`)
     : `<span class="no">✕ ${played ? "вы сыграли " + played : "так не сходить"}</span>` +
       `<span class="mv">надо ${c.san}</span><span class="when">${when}</span>`;
   const note = $id("note");
   note.className = "note";
   note.innerHTML = `<div class="srsverdict">${head}</div>` +
-    (ok && grade === 5 ? "" : `<div class="txt">${c.note || "Комментария к этому ходу в книге нет."}</div>`) +
+    (alt ? `<div class="txt">Тоже по книге: «${alt.cap}». Основная линия идёт ${c.san}.</div>`
+         : (ok && grade === 5 ? "" : `<div class="txt">${c.note || "Комментария к этому ходу в книге нет."}</div>`)) +
     `<div class="srsfrom">${c.short} · ${c.title}</div>`;
   note.classList.remove("flash"); void note.offsetWidth; note.classList.add("flash");
   if(navigator.vibrate) navigator.vibrate(ok ? 18 : [25,60,25]);
@@ -1885,8 +1951,9 @@ $id("srsquit").onclick  = srsQuit;
 $id("srsnew").onchange  = e=>{ SRS.opts.newPerDay = Math.max(0, Math.min(60, +e.target.value||0)); srsSave(); srsOpen(); };
 $id("srssize").onchange = e=>{ SRS.opts.sessionMax = Math.max(5, Math.min(80, +e.target.value||20)); srsSave(); srsOpen(); };
 $id("srsreset").onclick = ()=>{
-  if(!confirm("Стереть весь прогресс повторений? Отменить будет нельзя.")) return;
-  SRS.cards = {}; SRS.newDone = 0; srsSave();
+  if(!confirm("Стереть прогресс повторений по книге «" + BOOKS[bi].short +
+              "»? Отменить будет нельзя.")) return;
+  const bs = bookState(); bs.cards = {}; bs.newDone = 0; srsSave();
   srsOpen(); srsMsg("прогресс стёрт");   /* окно перерисовывается — сообщение после него */
 };
 

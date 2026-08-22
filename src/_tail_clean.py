@@ -16,7 +16,11 @@ for v in V:
         v["evals"][str(ply_of(k))] = sym
     for k, items in SUBS.get(v["id"], {}).items():
         n = ply_of(k)
-        for cap, mv, when in items:
+        for item in items:
+            # четвёртым элементом можно прямо сказать, приемлем ли этот ход:
+            # "alt" — им тоже можно играть, "bad" — так играть не надо
+            cap, mv, when = item[0], item[1], item[2]
+            kind = item[3] if len(item) > 3 else None
             bb = chess.Board()
             for san in v["moves"][:(n-1 if when=="before" else n)]: bb.push_san(san)
             plies=[]
@@ -27,7 +31,9 @@ for v in V:
                               "from":chess.square_name(m.from_square),
                               "to":chess.square_name(m.to_square),
                               "num":(f"{num}." if w else f"{num}…")})
-            v["subs"].setdefault(str(n),[]).append({"cap":cap,"plies":plies})
+            sub = {"cap":cap,"plies":plies}
+            if kind: sub["kind"] = kind
+            v["subs"].setdefault(str(n),[]).append(sub)
 
 # ================= кликабельные ходы прямо в тексте комментариев =================
 import scan as _sc
