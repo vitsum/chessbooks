@@ -177,6 +177,8 @@ h1{font-family:var(--disp);font-weight:600;font-size:clamp(22px,6vw,40px);line-h
 .srsplan b{color:var(--gold)}
 .srsplan .big{display:block;font-family:var(--disp);font-size:26px;color:var(--gold);
   margin-bottom:4px}
+.srsline{height:6px;background:var(--panel2);margin:10px 0 12px;overflow:hidden}
+.srslinefill{height:100%;background:var(--gold)}
 .srsopts{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
 .srsopts label{flex:1 1 150px;font-family:var(--mono);font-size:11px;letter-spacing:.05em;
   color:var(--mut);display:flex;flex-direction:column;gap:4px}
@@ -428,12 +430,6 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
     <div class="srsbody">
       <div class="srsplan" id="srsplan"></div>
       <div class="trgo"><button id="srsstart">Начать</button></div>
-      <div class="srsopts">
-        <label>новых карточек в день
-          <input type="number" id="srsnew" min="0" max="60" step="1"></label>
-        <label>карточек за сессию
-          <input type="number" id="srssize" min="5" max="80" step="5"></label>
-      </div>
       <p class="srsnote">Карточки берутся из открытой книги, и счёт у каждой книги свой.
         Прогресс хранится в этом браузере и здесь же остаётся.</p>
       <div class="srsiorow">
@@ -1482,7 +1478,7 @@ document.addEventListener("keydown",e=>{
   if($id("trmodal").classList.contains("on")){ if(e.key==="Escape") closeTr(); return; }
   if(srs){
     if(e.key==="Escape"){ srsQuit(); e.preventDefault(); }
-    else if(e.key==="Enter" && srs.answered){ srs.i++; srsNext(); e.preventDefault(); }
+    else if(e.key==="Enter" && srs.answered){ srsNext(); e.preventDefault(); }
     return;
   }
   if(tr){
@@ -1534,7 +1530,7 @@ const dayStr  = () => new Date(Date.now() - new Date().getTimezoneOffset()*60000
 /* Счёт у каждой книги свой: и колода, и дневной лимит, и статистика, и сброс.
    legacy — карточки из первой версии, где колода была общая: раскладываем их по книгам
    по мере того, как книгу открывают, чтобы уже накопленное не пропало. */
-let SRS = {v:2, opts:{newPerDay:8, sessionMax:20}, books:{}, legacy:null};
+let SRS = {v:2, opts:{}, books:{}, legacy:null};
 try{
   const raw = localStorage.getItem(SRS_KEY);
   if(raw){
@@ -1552,10 +1548,12 @@ function bookState(){
   const k = bookKey();
   return SRS.books[k] || (SRS.books[k] = {day:"", newDone:0, cards:{}});
 }
-function srsNewLeft(){
+/* Дневного лимита нет: тренироваться можно сколько угодно подряд, карточки кончаются
+   только вместе с книгой. Счётчик за день остаётся — но просто как статистика. */
+function srsTouchDay(){
   const st = bookState();
   if(st.day !== dayStr()){ st.day = dayStr(); st.newDone = 0; }
-  return Math.max(0, SRS.opts.newPerDay - st.newDone);
+  return st;
 }
 
 /* ---- опознание: ключ считаем от позиции, ход добавляем только для старых записей ---- */
@@ -1722,85 +1720,96 @@ function whenBack(st){
 }
 
 /* ---- сборка сессии ---- */
-function srsPlan(){
+/* Насколько карточка держится. За «полностью выучено» берём интервал в 21 день: этот
+   порог у Anki отделяет зрелые карточки от разучиваемых — месячный цикл она уже пережила.
+   Но считать только зрелые нечестно по отношению к первым неделям: процент стоял бы на
+   нуле, пока интервалы растут. Поэтому каждая карточка даёт свою долю пути до зрелости —
+   интервал 21 день и больше это 1, семь дней — треть, невиданная — ноль. Процент по книге
+   это среднее по колоде: он двигается после каждого верного ответа и падает сразу, как
+   только карточку провалили (провал сбрасывает интервал в ноль). Рядом всегда стоит и
+   сырой счёт: сколько карточек держится уверенно, сколько в работе, сколько не видел. */
+const LEARNED_DAYS = 21;
+const isLearned = st => !!st && (st.i || 0) >= LEARNED_DAYS;
+const strengthOf = st => st ? Math.min(1, (st.i || 0) / LEARNED_DAYS) : 0;
+
+function bookProgress(){
   buildDeck();
-  const t = today(), due = [], fresh = [];
-  const mine = bookState().cards;
+  const mine = bookState().cards, t = today();
+  let learned = 0, started = 0, fresh = 0, due = 0, sum = 0;
   CARDS.forEach(c=>{
     const st = mine[c.id];
-    if(st){ if(st.d <= t) due.push(c); } else fresh.push(c);
+    sum += strengthOf(st);
+    if(!st){ fresh++; return; }
+    if(isLearned(st)) learned++; else started++;
+    if(st.d <= t) due++;
   });
-  due.sort((x,y)=>{
-    const X = mine[x.id], Y = mine[y.id];
-    return (t - Y.d) - (t - X.d) || (Y.l||0) - (X.l||0);
-  });
-  fresh.sort((x,y)=> cardWeight(y) - cardWeight(x));
-  return {due, fresh, t};
+  const total = CARDS.length;
+  return {total, learned, started, fresh, due,
+          pct: total ? Math.round(sum / total * 100) : 0};
 }
-function buildSession(){
-  const {due, fresh} = srsPlan();
-  const max = SRS.opts.sessionMax;
-  const take = due.slice(0, max);
-  const room = Math.max(0, max - take.length);
-  /* Не больше двух новых карточек из одного варианта за сессию: иначе весь заход
-     уходит в начало одной линии, а это ровно та интерференция, которой мы избегаем. */
-  const perVar = {}, news = [];
-  const limit = Math.min(room, srsNewLeft());
-  for(const c of fresh){
-    if(news.length >= limit) break;
-    const kv = c.vid;
-    if((perVar[kv] || 0) >= 2) continue;
-    perVar[kv] = (perVar[kv]||0) + 1;
-    news.push(c);
+
+/* Какую карточку показать следующей. Порядок такой:
+     0 — просроченные повторы, самые «перележавшие» вперёд (и с провалами в анамнезе);
+     1 — то, что подошло сегодня, сначала то, где он ошибался;
+     2 — новые, по весу (частота ошибки в партиях + разобранность в книге);
+     3 — повторы наперёд: ближайшие к забыванию, провальные подтягиваются раньше.
+   Свежепоказанное придерживаем, чтобы одна карточка не шла дважды подряд и чтобы
+   маленький набор не крутился по кругу; соседство одного варианта тоже штрафуем. */
+function pickNext(){
+  buildDeck();
+  const mine = bookState().cards, t = today();
+  const recent = (srs && srs.recent) || [];
+  const hold = Math.min(recent.length, Math.max(0, CARDS.length - 1));
+  let best = null, bb = 99, bk = 0;
+  for(let pass = 0; pass < 2 && !best; pass++){
+    for(let i = 0; i < CARDS.length; i++){
+      const c = CARDS[i];
+      if(pass === 0 && recent.indexOf(c.id) >= 0) continue;   /* второй заход — без придержки */
+      const st = mine[c.id];
+      let bucket, key;
+      if(!st)               { bucket = 2; key = -cardWeight(c); }
+      else if(st.d < t)     { bucket = 0; key = -((t - st.d) / Math.max(1, st.i || 1)) - (st.l || 0); }
+      else if(st.d === t)   { bucket = 1; key = -(st.l || 0); }
+      else                  { bucket = 3; key = st.d - (st.l || 0) * 0.5; }
+      if(srs && srs.lastVid === c.vid) bucket += 0.5;         /* не подряд из одной линии */
+      if(srs && srs.lastPre === c.pre) bucket += 0.25;        /* и не с тем же началом */
+      if(!best || bucket < bb || (bucket === bb && key < bk)){ best = c; bb = bucket; bk = key; }
+    }
   }
-  return spreadOut(take.concat(news));
-}
-/* интерференция: рядом не должны стоять карточки из одной книги и с одинаковым началом */
-function spreadOut(list){
-  const pool = list.slice(), out = [];
-  let prev = null;
-  while(pool.length){
-    let k = pool.findIndex(c => !prev || (c.vid !== prev.vid && c.pre !== prev.pre));
-    if(k < 0) k = pool.findIndex(c => !prev || c.pre !== prev.pre);
-    if(k < 0) k = 0;
-    out.push(pool[k]); prev = pool[k]; pool.splice(k, 1);
-  }
-  return out;
+  return best;
 }
 
 /* ---- сам режим ---- */
 const srsLabel = () => "🔁 Карточки — повторение по книге «" + BOOKS[bi].short + "»";
 function srsOpen(){
   buildDeck();
-  const {due, fresh} = srsPlan();
-  const left = srsNewLeft();
-  const n = Math.min(SRS.opts.sessionMax, due.length + Math.min(fresh.length, left));
-  const known = Object.keys(bookState().cards).length;
+  srsTouchDay();
+  const p = bookProgress();
   const bname = BOOKS[bi].short;
-  $id("srsplan").innerHTML = n
-    ? `<span class="big">${plural(n, "карточка", "карточки", "карточек")}</span>` +
-      `на сегодня по книге «${bname}»: <b>${due.length}</b> на повтор` +
-      (Math.min(fresh.length, left) ? ` и <b>${Math.min(fresh.length, left)}</b> новых` : "") +
-      `.<br>В этой книге ${CARDS.length} карточек, начато ${known}.`
-    : `<span class="big">на сегодня всё</span>По книге «${bname}» повторять нечего.` +
-      (fresh.length ? ` Новые карточки откроются завтра — или поднимите дневной лимит ниже.` : "") +
-      `<br>В этой книге ${CARDS.length} карточек, начато ${known}.`;
-  $id("srsstart").disabled = !n;
-  $id("srsstart").textContent = n ? "Начать" : "Нечего повторять";
-  $id("srsnew").value  = SRS.opts.newPerDay;
-  $id("srssize").value = SRS.opts.sessionMax;
+  $id("srsplan").innerHTML =
+    `<span class="big">выучено ${p.pct}%</span>` +
+    `по книге «${bname}». Всего ${p.total}: ` +
+    `<b>${p.learned}</b> держится уверенно` +
+    (p.started ? `, <b>${p.started}</b> в работе` : "") +
+    (p.fresh ? `, <b>${p.fresh}</b> ещё не видел` : "") + `.` +
+    `<div class="srsline"><div class="srslinefill" style="width:${p.pct}%"></div></div>` +
+    (p.due ? `К повтору прямо сейчас: <b>${p.due}</b>. `
+           : `Срочного сейчас нет — буду показывать то, что ближе всего к забыванию, и новые. `) +
+    `Идти можно сколько угодно: карточки не кончатся.`;
+  $id("srsstart").disabled = !p.total;
+  $id("srsstart").textContent = p.total ? "Начать" : "В книге нет карточек";
   $id("srsmsg").textContent = "";
   $id("srsmodal").classList.add("on");
 }
 function srsClose(){ $id("srsmodal").classList.remove("on"); }
 
 function srsBegin(){
-  const queue = buildSession();
-  if(!queue.length) return;
+  buildDeck();
+  if(!CARDS.length) return;
   if(expl) closeExpl();
   if(tr) closeTrainer();
   sub = null;
-  srs = {queue, i:0, total:queue.length, done:0, right:0, wrong:0,
+  srs = {done:0, right:0, wrong:0, recent:[], lastVid:null, lastPre:null,
          card:null, g:null, t0:0, bad:0, shown:false, answered:false, fin:false};
   $id("srsbtn").classList.add("on");
   $id("srsbtn").textContent = "✕ Выйти из повторения";
@@ -1824,8 +1833,14 @@ function srsQuit(){
 }
 function srsNext(){
   if(!srs) return;
-  if(srs.i >= srs.queue.length){ srsFinish(); return; }
-  const c = srs.queue[srs.i];
+  const c = pickNext();
+  if(!c){ srsFinish(); return; }
+  /* придерживаем недавние: одна карточка не идёт дважды подряд, а маленький набор
+     не крутится по кругу */
+  srs.recent.push(c.id);
+  const hold = Math.max(1, Math.min(8, CARDS.length - 1));
+  while(srs.recent.length > hold) srs.recent.shift();
+  srs.lastVid = c.vid; srs.lastPre = c.pre;
   srs.card = c; srs.g = new ChessCls(c.fen);
   srs.t0 = Date.now(); srs.bad = 0; srs.shown = false; srs.answered = false;
   clearSel();
@@ -1849,7 +1864,7 @@ function srsNext(){
   ask.appendChild(sh);
   const note = $id("note");
   note.className = "note";
-  note.innerHTML = `<div class="head"><b>карточка ${srs.i+1}</b>` +
+  note.innerHTML = `<div class="head"><b>карточка ${srs.done+1}</b>` +
     `<span class="cnt">${srs.card.short}</span></div>` +
     `<div class="txt">Сделайте ход, который стоит в книге. Одна попытка: неверный ход
      вернёт карточку в конец сегодняшней очереди.` +
@@ -1859,10 +1874,12 @@ function srsNext(){
 }
 function srsBar(){
   if(!srs) return;
-  const n = srs.queue.length;
-  $id("srscount").innerHTML = `повторение · <b>${Math.min(srs.i+1, n)}</b> / ${n}`;
-  $id("srsfill").style.width = (srs.done / Math.max(1, n) * 100) + "%";
-  $id("srsmeta").textContent = `верно ${srs.right} · с ошибкой ${srs.wrong}`;
+  const p = bookProgress();
+  $id("srscount").innerHTML = `выучено <b>${p.pct}%</b> · ${BOOKS[bi].short}`;
+  $id("srsfill").style.width = p.pct + "%";
+  $id("srsmeta").textContent =
+    `уверенно ${p.learned} · в работе ${p.started} · не видел ${p.fresh}` +
+    ` · к повтору ${p.due} · за заход ${srs.right}✓ ${srs.wrong}✕`;
 }
 
 /* сколько у стороны вообще ходов: за вынужденный ход «легко» не ставим */
@@ -1905,9 +1922,8 @@ function srsAnswer(played, hit){
 
   srs.done++;
   if(ok) srs.right++; else srs.wrong++;
-  if(!ok){                                    /* ошибка — карточка вернётся в этой же сессии */
-    srs.queue.push(c);
-  }
+  /* провал уже сбросил срок на сегодня в srsSchedule — карточка вернётся сама,
+     но не сразу: сначала пройдут другие, которые придерживает srs.recent */
   /* показываем правильный ход на доске */
   const g2 = new ChessCls(c.fen);
   let mv = null; try{ mv = g2.move(ok ? played : c.san); }catch(e){}
@@ -1954,14 +1970,14 @@ function srsAnswer(played, hit){
   box.innerHTML = "";
   const nxt = document.createElement("button");
   nxt.className = "go";
-  nxt.textContent = srs.i + 1 >= srs.queue.length ? "Завершить" : "Дальше";
-  nxt.onclick = ()=>{ srs.i++; srsNext(); };
+  nxt.textContent = "Дальше";
+  nxt.onclick = ()=>{ srsNext(); };
   box.appendChild(nxt);
   const open = document.createElement("button");
   open.textContent = "открыть вариант в книге";
   open.onclick = ()=>{ const cc = srs.card; srsQuit(); srsGoTo(cc); };
   box.appendChild(open);
-  if(ok) srs.tmr = setTimeout(()=>{ if(srs && srs.answered){ srs.i++; srsNext(); } }, 1100);
+  if(ok) srs.tmr = setTimeout(()=>{ if(srs && srs.answered) srsNext(); }, 1100);
 }
 
 /* показать ответ, не угадывая */
@@ -1969,35 +1985,22 @@ function srsShow(){
   if(!srs || srs.answered) return;
   srs.shown = true; srsAnswer(srs.card.san, srs.card.moves[0]);
 }
+/* Сюда попадаем, только если в книге вообще нечего показать. */
 function srsFinish(){
   srs.fin = true;
-  const n = srs.done, ok = srs.right;
-  $id("srscount").innerHTML = `повторение · готово`;
-  $id("srsfill").style.width = "100%";
-  $id("srsmeta").textContent = `верно ${ok} из ${n}`;
-  $id("hint").textContent = "сессия закончена";
-  const {due, fresh} = srsPlan();
-  const left = srsNewLeft();
-  const more = Math.min(SRS.opts.sessionMax, due.length + Math.min(fresh.length, left));
+  const p = bookProgress();
+  $id("srscount").innerHTML = `выучено <b>${p.pct}%</b> · ${BOOKS[bi].short}`;
+  $id("srsfill").style.width = p.pct + "%";
+  $id("srsmeta").textContent = `за заход ${srs.right}✓ ${srs.wrong}✕`;
+  $id("hint").textContent = "карточки кончились";
   const note = $id("note");
   note.className = "note";
-  note.innerHTML = `<div class="head"><b>сессия закончена</b>` +
-    `<span class="cnt">${ok} из ${n}</span></div>` +
-    `<div class="txt">` +
-    (more ? `На сегодня осталось ещё ${plural(more, "карточка", "карточки", "карточек")} — можно начать новую сессию.`
-          : `На сегодня всё. Завтра вернутся карточки, у которых подошёл срок.`) +
-    `</div>`;
+  note.innerHTML = `<div class="head"><b>карточек больше нет</b>` +
+    `<span class="cnt">выучено ${p.pct}%</span></div>` +
+    `<div class="txt">В этой книге показывать нечего. Возьмите другую книгу — там своя колода.</div>`;
   const box = $id("subs"); box.innerHTML = "";
-  if(more){
-    const again = document.createElement("button");
-    again.className = "go"; again.textContent = "Ещё сессия";
-    again.onclick = ()=>{ const q = buildSession(); if(!q.length) return;
-      srs.queue = q; srs.i = 0; srs.total = q.length; srs.done = 0; srs.right = 0; srs.wrong = 0;
-      srs.fin = false; srsNext(); };
-    box.appendChild(again);
-  }
   const out = document.createElement("button");
-  out.textContent = "выйти"; out.onclick = srsQuit;
+  out.className = "go"; out.textContent = "выйти"; out.onclick = srsQuit;
   box.appendChild(out);
 }
 /* уйти из повторения к нужному месту книги */
@@ -2014,8 +2017,6 @@ $id("srsclose").onclick = srsClose;
 $id("srsmodal").onclick = e=>{ if(e.target === $id("srsmodal")) srsClose(); };
 $id("srsstart").onclick = ()=>{ srsClose(); srsBegin(); };
 $id("srsquit").onclick  = srsQuit;
-$id("srsnew").onchange  = e=>{ SRS.opts.newPerDay = Math.max(0, Math.min(60, +e.target.value||0)); srsSave(); srsOpen(); };
-$id("srssize").onchange = e=>{ SRS.opts.sessionMax = Math.max(5, Math.min(80, +e.target.value||20)); srsSave(); srsOpen(); };
 $id("srsreset").onclick = ()=>{
   if(!confirm("Стереть прогресс повторений по книге «" + BOOKS[bi].short +
               "»? Отменить будет нельзя.")) return;
