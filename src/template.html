@@ -113,15 +113,59 @@ h1{font-family:var(--disp);font-weight:600;font-size:clamp(22px,6vw,40px);line-h
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* ---------- раскладка ---------- */
-.grid{display:grid;gap:18px}
-@media(min-width:860px){.grid{grid-template-columns:minmax(0,1fr) 330px;align-items:start}}
-.left{width:100%;max-width:520px;margin:0 auto}
-/* Доска квадратная и тянется по ширине колонки, поэтому на низком экране (телефон
+/* Отступы между блоками задают сами блоки своими margin, а не gap сетки: так
+   мобильная колонка выглядит ровно как раньше, когда всё лежало в одном div. */
+.grid{display:grid;row-gap:0}
+.left,.side{width:100%}
+.left{max-width:520px;margin:0 auto}
+
+/* Телефон и планшет: колонки нет, .side растворяется, порядок восстанавливается
+   через order — раскладка в точности прежняя.
+   Доска квадратная и тянется по ширине колонки, поэтому на низком экране (телефон
    в альбомной ориентации) её низ уезжает за край. Ограничиваем колонку ещё и по
    высоте окна: 34px — это градусник с отступом, всё остальное уходит доске.
    svh — высота окна без учёта выезжающих панелей браузера; где его нет, остаётся vh. */
 @media(max-width:859px){
-  .left{max-width:min(520px,calc(72vh + 34px));max-width:min(520px,calc(72svh + 34px))}
+  .side{display:contents}
+  .pickrow{order:1} .modes{order:2} .varpos{order:3}
+  /* полоса повторений стоит вплотную над доской, как раньше, и той же ширины */
+  .srsbar{order:4;max-width:min(520px,calc(72vh + 34px));max-width:min(520px,calc(72svh + 34px));
+          margin-left:auto;margin-right:auto}
+  .left{order:5;max-width:min(520px,calc(72vh + 34px));max-width:min(520px,calc(72svh + 34px))}
+  .ctrl{order:6} .hint{order:7} .notes{order:8} .sheet{order:9;margin-top:18px}
+}
+
+/* ПК: слева доска, справа всё остальное — комментарий виден без прокрутки.
+   Ширину доски и высоту правой колонки считает fitDesk() по высоте окна:
+   формулой этого не выразить, высота шапки зависит от длины описания книги. */
+@media(min-width:860px){
+  /* Ширину левой колонки задаём треком, а не max-width: у доски нет собственной
+     ширины, и трек auto схлопнулся бы по содержимому соседних полосок. */
+  .grid{grid-template-columns:var(--bw,520px) minmax(320px,1fr);column-gap:20px;align-items:start}
+  .left{margin:0;max-width:none}
+  /* Верх колонки — управление в свой рост, низ — комментарий, который тянется
+     и прокручивается внутри себя, чтобы страница не росла. */
+  .side{display:grid;grid-template-columns:minmax(0,1fr);
+        grid-template-rows:auto auto auto auto auto minmax(0,1fr);
+        column-gap:12px;max-height:var(--sh,none)}
+  .side > *{min-width:0}
+  .notes{grid-row:6;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+  .varpos{margin:6px 0 8px}
+  .ctrl{margin-top:0}
+  .note{margin-top:0}
+  /* Таблица ходов на ПК не нужна: её заменяет полоска навигации с номером хода.
+     В проводнике та же панель показывает совпадающие варианты — её оставляем, но
+     рядом с комментарием, а не под ним: по вертикали они вдвоём не помещаются,
+     зато колонка широкая. */
+  .sheet{display:none}
+  .side.expl{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .side.expl > .srsbar,.side.expl > .pickrow,.side.expl > .modes,.side.expl > .varpos,
+  .side.expl > .ctrl,.side.expl > .hint{grid-column:1 / -1}
+  .side.expl > .notes{grid-column:1}
+  .side.expl > .sheet{display:block;grid-row:6;grid-column:2;margin-top:0;overflow:hidden}
+  /* Потолок списка приходит из JS: внутри <details> содержимое лежит в анонимном
+     боксе, флекс-сжатие до него не достаёт, и список раздувал страницу до 3400px. */
+  .side.expl > .sheet .rows{max-height:var(--rowsh,200px)}
 }
 
 /* ---------- градусник ---------- */
@@ -285,6 +329,17 @@ h1{font-family:var(--disp);font-weight:600;font-size:clamp(22px,6vw,40px);line-h
 .ctrl button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .ctrl button:disabled{opacity:.3;cursor:default}
 .ctrl .flip{flex:0 0 52px;font-size:13px}
+/* номер хода вместо таблицы ходов — только на ПК */
+.ctrl .pos{display:none;align-items:center;justify-content:center;flex:1 1 auto;min-width:0;
+  background:var(--panel);border:1px solid var(--rule);border-radius:2px;padding:0 10px;
+  font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;color:var(--mut);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ctrl .pos b{color:var(--gold);font-weight:400}
+@media(min-width:860px){
+  .ctrl .pos{display:flex}
+  .ctrl button{flex:0 0 46px;font-size:14px;padding:11px 0}
+  .ctrl .flip{flex:0 0 46px}
+}
 /* подсказка: у следующего хода есть комментарий */
 .ctrl button.coming::after{content:"";position:absolute;top:6px;right:8px;width:6px;height:6px;
   border-radius:50%;background:var(--gold);box-shadow:0 0 6px var(--gold)}
@@ -402,20 +457,6 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
   <div class="src" id="src"></div>
 </header>
 
-<div class="pickrow">
-  <button class="varnav" id="prevvar" title="Предыдущий вариант" aria-label="Предыдущий вариант">◀</button>
-  <button class="picker" id="picker" aria-haspopup="dialog">
-    <span class="cap"><span class="ch" id="pch"></span><span class="nm" id="pnm"></span></span>
-    <span class="arrow">▾</span>
-  </button>
-  <button class="varnav" id="nextvar" title="Следующий вариант" aria-label="Следующий вариант">▶</button>
-</div>
-<div class="modes">
-  <button class="explbtn" id="explbtn">⚑ Проводник — двигать фигуры и искать позицию в книге</button>
-  <button class="explbtn" id="trainbtn">🎓 Тренажёр — разыграть варианты за чёрных</button>
-</div>
-<div class="varpos" id="varpos"></div>
-
 <div class="sheetbg" id="modal" role="dialog" aria-modal="true" aria-label="Выбор варианта">
   <div class="picklist" id="picklist">
     <div class="top"><b>Выберите вариант</b><button id="close" aria-label="Закрыть">×</button></div>
@@ -438,16 +479,8 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
   </div>
 </div>
 
-<div class="grid">
+<div class="grid" id="grid">
   <div class="left">
-    <div class="srsbar" id="srsbar">
-      <div class="srshead">
-        <span id="srscount">тренировка</span>
-        <button id="srsquit" title="Выйти из тренировки" aria-label="Выйти">×</button>
-      </div>
-      <div class="srsprog"><div class="srsfill" id="srsfill"></div></div>
-      <div class="srsmeta" id="srsmeta"></div>
-    </div>
     <div class="boardrow">
       <div class="gauge" id="gauge" title="Оценка по книге">
         <div class="g-white" id="gwhite"></div>
@@ -460,23 +493,52 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
       <span class="lbl">движок <b id="cpnum">—</b></span>
       <span class="val" id="ev"></span>
     </div>
+  </div>
+
+  <!-- Правая колонка на ПК: всё, чем управляют, и комментарий — рядом с доской.
+       На телефоне .side растворяется (display:contents), а порядок элементов
+       восстанавливается через order, чтобы мобильная раскладка не менялась. -->
+  <div class="side">
+    <div class="srsbar" id="srsbar">
+      <div class="srshead">
+        <span id="srscount">тренировка</span>
+        <button id="srsquit" title="Выйти из тренировки" aria-label="Выйти">×</button>
+      </div>
+      <div class="srsprog"><div class="srsfill" id="srsfill"></div></div>
+      <div class="srsmeta" id="srsmeta"></div>
+    </div>
+    <div class="pickrow">
+      <button class="varnav" id="prevvar" title="Предыдущий вариант" aria-label="Предыдущий вариант">◀</button>
+      <button class="picker" id="picker" aria-haspopup="dialog">
+        <span class="cap"><span class="ch" id="pch"></span><span class="nm" id="pnm"></span></span>
+        <span class="arrow">▾</span>
+      </button>
+      <button class="varnav" id="nextvar" title="Следующий вариант" aria-label="Следующий вариант">▶</button>
+    </div>
+    <div class="modes">
+      <button class="explbtn" id="explbtn">⚑ Проводник — двигать фигуры и искать позицию в книге</button>
+      <button class="explbtn" id="trainbtn">🎓 Тренажёр — разыграть варианты за чёрных</button>
+    </div>
+    <div class="varpos" id="varpos"></div>
     <div class="ctrl">
       <button id="first" title="В начало" aria-label="В начало">⏮</button>
       <button id="prev" title="Ход назад" aria-label="Ход назад">◀</button>
+      <span class="pos" id="movepos"></span>
       <button id="next" title="Ход вперёд" aria-label="Ход вперёд">▶</button>
       <button id="last" title="В конец" aria-label="В конец">⏭</button>
       <button id="flip" class="flip" title="Развернуть доску" aria-label="Развернуть доску">⇅</button>
     </div>
     <div class="hint" id="hint">свайп по доске — листать ходы</div>
-    <div class="note" id="note"></div>
-    <div class="subs" id="subs"></div>
-    <button class="missed" id="missed"></button>
+    <div class="notes" id="notes">
+      <div class="note" id="note"></div>
+      <div class="subs" id="subs"></div>
+      <button class="missed" id="missed"></button>
+    </div>
+    <details class="sheet" id="sheet">
+      <summary>Все ходы варианта</summary>
+      <div class="rows" id="rows"></div>
+    </details>
   </div>
-
-  <details class="sheet" id="sheet">
-    <summary>Все ходы варианта</summary>
-    <div class="rows" id="rows"></div>
-  </details>
 </div>
 
 <footer>
@@ -689,6 +751,51 @@ new ResizeObserver(es=>{
   if(w && w !== lastW){ lastW = w; board.resize(); setTimeout(paintHL,20); }
 }).observe($id("board"));
 
+/* На ПК доска и правая колонка должны уместиться в окно без прокрутки. Формулой в CSS
+   это не выразить: высота шапки зависит от длины описания книги, а полоса повторений
+   появляется только в тренажёре. Поэтому меряем и раздаём две переменные:
+   --bw — ширина левой колонки (доска + 34px под градусник), --sh — потолок правой.
+   Обратной связи нет: верх сетки от размера доски не зависит, цикла не возникает. */
+const DESK = () => window.matchMedia("(min-width:860px)").matches;
+function fitDesk(){
+  const root = document.documentElement.style;
+  if(!DESK()){ root.removeProperty("--bw"); root.removeProperty("--sh"); return; }
+  const top   = $id("grid").getBoundingClientRect().top + window.scrollY;
+  const below = document.querySelector("footer").offsetHeight + 22 + 32;
+  const H     = Math.max(320, window.innerHeight - top - below);
+  const strip = document.querySelector(".evalstrip").offsetHeight;
+  const bw    = Math.max(280, Math.min(520, H - strip));
+  root.setProperty("--bw", (bw + 34) + "px");
+  root.setProperty("--sh", H + "px");
+  /* Ширину доске задаёт колонка, а высоту ставит сам chessboard.js — и только в resize().
+     Зовём его сами: ResizeObserver срабатывает лишь при отрисовке кадра, а нам нужен
+     квадрат сразу, ещё до первого кадра. */
+  board.resize();
+  setTimeout(paintHL, 20);
+  /* Второй проход: сколько осталось списку совпадений под управлением. На высоту
+     самой колонки это не влияет, обратной связи нет. */
+  const side = document.querySelector(".side");
+  const free = side.getBoundingClientRect().top + H - $id("notes").getBoundingClientRect().top;
+  root.setProperty("--rowsh", Math.max(120, Math.round(free - 46)) + "px");
+}
+addEventListener("resize", fitDesk);
+
+/* Номер хода в полоске навигации — вместо таблицы ходов, которой на ПК больше нет. */
+function paintPos(){
+  const el = $id("movepos"); if(!el) return;
+  let t;
+  if(tr)        t = tr.done ? "вариант пройден" : `ход <b>${Math.floor(tr.path.length/2)+1}</b>`;
+  else if(expl){const n = expl.g.history().length;
+                t = n ? `сыграно <b>${n}</b>` : "стартовая позиция";}
+  else if(sub)  t = `побочная линия <b>${sub.i}</b>/${sub.plies.length-1}`;
+  else {
+    const pl = VARS[vi].plies;
+    t = pi ? `<b>${Math.ceil(pi/2)}${pi%2?".":"…"}${pl[pi].san}</b> · ${pi}/${pl.length-1}`
+           : `начало · 0/${pl.length-1}`;
+  }
+  el.innerHTML = t;
+}
+
 /* ---- список вариантов ---- */
 function buildOpts(){
   const box=$id("opts"); box.innerHTML=""; let chapter=null;
@@ -728,6 +835,7 @@ function setBook(i){
   if(expl) closeExpl();
   if(tr) closeTrainer();
   bi = i; VARS = BOOKS[bi].vars; vi = 0; pi = 0; sub = null;
+  setTimeout(fitDesk, 0);                   /* у другой книги другое описание в шапке */
   paintBook(); buildOpts(); render();
 }
 function paintBook(){
@@ -898,6 +1006,7 @@ function render(){
   $id("next").classList.toggle("coming", !!(nx && nx.note));
   refreshMissed();
   drawSheet();
+  paintPos();
   $id("prev").disabled = $id("first").disabled = (pi===0);
   $id("next").disabled = $id("last").disabled = (pi===v.plies.length-1);
 }
@@ -908,6 +1017,9 @@ const EXPL_LABEL = "⚑ Проводник — двигать фигуры и и
 $id("explbtn").textContent = EXPL_LABEL;
 function closeExpl(){                       /* только гасит режим, ничего не перерисовывает */
   expl=null;
+  $id("sheet").classList.remove("on");     /* на ПК панель живёт только в проводнике */
+  document.querySelector(".side").classList.remove("expl");
+  fitDesk();
   $id("explbtn").classList.remove("on");
   $id("explbtn").textContent = EXPL_LABEL;
   $id("sheet").querySelector("summary").textContent = "Все ходы варианта";
@@ -916,9 +1028,12 @@ function toggleExpl(){
   if(expl){ closeExpl(); render(); return; }
   if(tr) closeTrainer();
   sub=null; expl={g:new ChessCls(), last:null, err:null};
+  $id("sheet").classList.add("on");
+  document.querySelector(".side").classList.add("expl");
   $id("explbtn").classList.add("on");
   $id("explbtn").textContent="✕ Выйти из проводника";
   renderExpl();
+  fitDesk();
 }
 /* нелегальный ход: показываем подсказку и сами гасим её через пару секунд */
 let warnTimer=null;
@@ -973,6 +1088,7 @@ function renderExpl(){
     };
   });
 
+  paintPos();
   const box=$id("rows"); box.innerHTML="";
   const hits = cell ? cell.hits : [];
   $id("sheet").querySelector("summary").textContent =
@@ -1399,6 +1515,7 @@ function trRender(){
   $id("ev").className = "val" + (tr.wrong || (tr.done && tr.errs) ? " bad" : "");
   $id("ev").textContent = tr.done ? v.eval : (tr.wrong ? "ошибка" : "тренировка");
 
+  paintPos();
   /* лист ходов -> сыгранная линия */
   const box = $id("rows"); box.innerHTML = "";
   $id("sheet").querySelector("summary").textContent =
@@ -1844,8 +1961,13 @@ function subMovesHere(v, ply, fen){
   return {good, bad};
 }
 
+/* На телефоне панель ходов остаётся свёрнутой, как и была: развёрнутая уводит подвал
+   на пол-экрана вниз. В проводнике её раскрывает renderExpl, когда есть совпадения. */
 if(window.innerWidth>=860) $id("sheet").open = true;
 paintBook(); buildOpts(); render();
+fitDesk();
+/* шрифты дорисовываются после первого кадра и меняют высоту шапки — пересчитаем */
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(fitDesk);
 </script>
 </body>
 </html>
