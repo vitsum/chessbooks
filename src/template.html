@@ -1601,6 +1601,7 @@ function buildDeck(){
   bk.vars.forEach(v=>{
     if(v.off) return;                         /* партии целиком и чужие ошибки не спрашиваем */
     const g = new ChessCls();
+    let prev = null;                          /* ход, которым сюда пришли */
     for(let i=0;i<v.moves.length;i++){
       const san = v.moves[i];
       if(g.turn() === bk.side){
@@ -1611,6 +1612,7 @@ function buildDeck(){
           c = {id, b, vid:v.id, ply:i, fen, san, side:bk.side, note,
                prio: v.prio || 0, title: v.title, chapter: v.chapter,
                short: bk.short, moves: [], bad: [],
+               pf: prev ? prev.from : null, pt: prev ? prev.to : null,
                pre: v.moves.slice(0, Math.min(i,4)).join(" ")};
           c.moves.push({san, kind:"main", vid:v.id, title:v.title, note});
           by[id] = c; list.push(c);
@@ -1649,7 +1651,7 @@ function buildDeck(){
           }
         });
       }
-      try{ g.move(san); }catch(e){ break; }    /* битую линию просто обрываем */
+      try{ prev = g.move(san); }catch(e){ break; }   /* битую линию просто обрываем */
     }
   });
   /* ход, помеченный где-то как плохой, не должен считаться верным из-за другого варианта */
@@ -1843,6 +1845,9 @@ function srsNext(){
   srs.lastVid = c.vid; srs.lastPre = c.pre;
   srs.card = c; srs.g = new ChessCls(c.fen);
   srs.t0 = Date.now(); srs.bad = 0; srs.shown = false; srs.answered = false;
+  /* Подсветка на старте карточки — ход соперника, которым он сюда привёл. Раньше здесь
+     не сбрасывалось ничего, и на новой позиции горели клетки хода с прошлой карточки. */
+  srs.last = c.pf ? {from: c.pf, to: c.pt} : null;
   clearSel();
   board.orientation(c.side === "w" ? "white" : "black");
   board.position(c.fen);
