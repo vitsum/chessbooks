@@ -413,7 +413,6 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
 <div class="modes">
   <button class="explbtn" id="explbtn">⚑ Проводник — двигать фигуры и искать позицию в книге</button>
   <button class="explbtn" id="trainbtn">🎓 Тренажёр — разыграть варианты за чёрных</button>
-  <button class="explbtn" id="srsbtn">🔁 Карточки — повторение по этой книге</button>
 </div>
 <div class="varpos" id="varpos"></div>
 
@@ -421,22 +420,6 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
   <div class="picklist" id="picklist">
     <div class="top"><b>Выберите вариант</b><button id="close" aria-label="Закрыть">×</button></div>
     <div id="opts"></div>
-  </div>
-</div>
-
-<div class="sheetbg" id="srsmodal" role="dialog" aria-modal="true" aria-label="Повторение">
-  <div class="picklist" id="srslist">
-    <div class="top"><b>Повторение</b><button id="srsclose" aria-label="Закрыть">×</button></div>
-    <div class="srsbody">
-      <div class="srsplan" id="srsplan"></div>
-      <div class="trgo"><button id="srsstart">Начать</button></div>
-      <p class="srsnote">Карточки берутся из открытой книги, и счёт у каждой книги свой.
-        Прогресс хранится в этом браузере и здесь же остаётся.</p>
-      <div class="srsiorow">
-        <button id="srsreset" class="danger">стереть прогресс</button>
-      </div>
-      <div class="srsmsg" id="srsmsg"></div>
-    </div>
   </div>
 </div>
 
@@ -459,8 +442,8 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
   <div class="left">
     <div class="srsbar" id="srsbar">
       <div class="srshead">
-        <span id="srscount">повторение</span>
-        <button id="srsquit" title="Выйти из повторения" aria-label="Выйти">×</button>
+        <span id="srscount">тренировка</span>
+        <button id="srsquit" title="Выйти из тренировки" aria-label="Выйти">×</button>
       </div>
       <div class="srsprog"><div class="srsfill" id="srsfill"></div></div>
       <div class="srsmeta" id="srsmeta"></div>
@@ -595,7 +578,6 @@ BOOKS.forEach((bk,b)=>bk.vars.forEach((v,k)=>{
    выключен, а ходят двумя касаниями: тап по фигуре, тап по клетке. Мышью работает
    и то, и другое. */
 const TOUCH = !!(window.matchMedia && window.matchMedia("(pointer: coarse)").matches);
-let srs = null;        /* режим интервальных повторений, включается ниже */
 let sel = null;        /* клетка, выбранная касанием или щелчком */
 let selBefore = null;  /* она же на момент начала перетаскивания */
 let gestEnd = 0;       /* конец жеста, который тапом считать нельзя: свайп, перетаскивание */
@@ -606,8 +588,7 @@ const board = Chessboard("board", {
   dropOffBoard:"snapback",
   /* в проводнике тянем что угодно, в тренажёре — только чёрные и только в свой ход */
   onDragStart: (src, piece) => {
-    const can = srs  ? (!srs.answered && piece[0] === srs.card.side)
-              : expl ? !expl.g.isGameOver()
+    const can = expl ? !expl.g.isGameOver()
               : tr   ? (!tr.done && !tr.wait && tr.g.turn() === tr.side && piece[0] === tr.side)
               : false;
     /* Подсветку гасим, только если фигуру и правда потащили. Если тащить нельзя (щёлкнули
@@ -633,7 +614,6 @@ const board = Chessboard("board", {
 });
 /* ход, сделанный любым способом: перетаскиванием или двумя касаниями */
 function applyMove(from, to){
-  if(srs) return srsMove(from, to);
   if(tr) return trDrop(from, to);
   if(!expl) return "snapback";
   /* chess.js 1.0-beta бросает исключение на нелегальном ходе. Без catch оно вылетает
@@ -647,13 +627,12 @@ function applyMove(from, to){
 }
 
 /* ---- ход двумя касаниями ---- */
-function liveGame(){ return expl ? expl.g : (tr ? tr.g : (srs ? srs.g : null)); }
+function liveGame(){ return expl ? expl.g : (tr ? tr.g : null); }
 /* брать фигуру можно там же, где её разрешено потянуть, — правила из onDragStart */
 function canPick(sq){
   const g = liveGame(); if(!g) return false;
   const p = g.get(sq);  if(!p) return false;
   if(expl) return !g.isGameOver() && p.color === g.turn();
-  if(srs)  return !srs.answered && p.color === srs.card.side;
   return !tr.done && !tr.wait && g.turn() === tr.side && p.color === tr.side;
 }
 function selMoves(){
@@ -730,11 +709,9 @@ function buildOpts(){
 })();
 
 function setBook(i){
-  if(srs) srsQuitQuiet();
   if(expl) closeExpl();
   if(tr) closeTrainer();
   bi = i; VARS = BOOKS[bi].vars; vi = 0; pi = 0; sub = null;
-  $id("srsbtn").textContent = srsLabel();
   paintBook(); buildOpts(); render();
 }
 function paintBook(){
@@ -777,7 +754,7 @@ $id("modal").onclick=e=>{ if(e.target===$id("modal")) closeModal(); };
 function frame(){ return sub ? sub.plies[sub.i] : VARS[vi].plies[pi]; }
 function paintHL(){
   $(".square-55d63").removeClass("hl");
-  const p = expl ? expl.last : tr ? tr.last : srs ? srs.last : frame();
+  const p = expl ? expl.last : tr ? tr.last : frame();
   if(p && p.from) $("#board .square-"+p.from+", #board .square-"+p.to).addClass("hl");
   /* выбор мог устареть: сменился режим, сторона или сама позиция */
   if(sel && !canPick(sel)) sel = null;
@@ -921,7 +898,6 @@ function closeExpl(){                       /* только гасит режи�
 }
 function toggleExpl(){
   if(expl){ closeExpl(); render(); return; }
-  if(srs) srsQuitQuiet();
   if(tr) closeTrainer();
   sub=null; expl={g:new ChessCls(), last:null, err:null};
   $id("explbtn").classList.add("on");
@@ -1076,13 +1052,14 @@ function trRecord(i, errs){
 let trTimer = null;
 function closeTrainer(){
   tr = null; clearTimeout(trTimer);
+  $id("srsbar").classList.remove("on");
   $id("trainbtn").classList.remove("on");
   $id("trainbtn").textContent = trainLabel();
   $id("sheet").querySelector("summary").textContent = "Все ходы варианта";
   $id("hint").textContent = HINT_LABEL;
 }
+$id("srsquit").onclick = ()=>{ if(tr){ closeTrainer(); render(); } };
 $id("trainbtn").onclick = ()=>{
-  if(srs) srsQuit();
   if(tr){ closeTrainer(); render(); return; }
   openTr();
 };
@@ -1092,13 +1069,17 @@ function trBegin(target){
   sub = null;
   const set = activeIdx();
   if(target == null && !set.length) return;   /* явную цель гоняем и вне выборки */
-  tr = {g:new ChessCls(), side:SIDE(), path:[], target: target != null ? target : trPick(set),
+  const pick = target != null ? target : srsPickVar();
+  if(pick == null) return;
+  if(target == null) srsRemember(VARS[pick]);
+  tr = {g:new ChessCls(), side:SIDE(), path:[], target: pick, t0: Date.now(), peeked:false,
         errs:0, wrong:null, offbook:null, shown:null, illegal:null,
         last:null, done:false, wait:false, credited:[], chosen: target != null,
         /* снимок перед каждым ходом чёрных — по нему работает «забрать ход» */
         stack:[], rewound:false};
   $id("trainbtn").classList.add("on");
   $id("trainbtn").textContent = "✕ Выйти из тренажёра";
+  trBar();
   trRender();
   trReply();
 }
@@ -1135,23 +1116,32 @@ function trDrop(from, to){
 
   if(m.san === expect){ trAccept(m); return; }
 
-  /* Ход не тот, что в целевом варианте. Но если он есть в книге — это не ошибка:
-     ход правильный, просто сейчас тренируется другая линия. Возвращаем фигуру
-     и говорим, куда этот ход ведёт. Переключаться на ходу не будем: тренируем то,
-     что начали, иначе прогон растекается по всей книге. */
-  const fits = i => pathFits(VARS[i], tr.path) && VARS[i].moves[tr.path.length] === m.san;
-  const other = VARS.map((v,i)=>i).filter(i => i !== tr.target && fits(i));
+  /* Ход не тот, что в целевом варианте. Но книга могла играть отсюда и другой ход —
+     в другом варианте или побочной линией. Совпадение считаем ПО ПОЗИЦИИ, а не по
+     совпадению ходов вообще: иначе привычная ошибка проходила бы как «другая линия».
+     Такой ход ошибкой не считаем, но и линию не меняем — тренируем то, что начали. */
+  const fen = tr.g.fen();                     /* позиция уже после хода — откатываем ниже */
   tr.g.undo();
-  if(other.length){
+  const here = tr.g.fen();
+  const alt = bookMovesHere(here, tr.target).find(x=>x.san === m.san);
+  const subs = subMovesHere(VARS[tr.target], tr.path.length, here);
+  const good = subs.good.find(x=>x.san === m.san);
+  const bad  = subs.bad.find(x=>x.san === m.san);
+  if(alt || good){
     tr.offbook = {played:m.san, num:trNum(tr.path.length),
-                  title:VARS[other[0]].title, more:other.length - 1};
+                  title: alt ? alt.title : "",
+                  cap: good ? good.cap : "",
+                  why: alt ? `книжный ход, но из варианта «${alt.title}»`
+                           : `книга допускает и его: «${good.cap}»`};
     tr.wrong = null;
     trRender();
     return "snapback";
   }
   tr.errs++;
   tr.offbook = null;
-  tr.wrong = {played:m.san, num:trNum(tr.path.length)};
+  tr.wrong = {played:m.san, num:trNum(tr.path.length),
+              why: bad ? `книга разбирает этот ход как ошибку: «${bad.cap}»`
+                       : "из этой позиции такого хода в книге нет"};
   trRender();
   if(navigator.vibrate) navigator.vibrate([25,60,25]);
   return "snapback";
@@ -1178,6 +1168,7 @@ function trSay(msg){
 function trShow(){
   if(!tr || tr.done || tr.wait) return;
   if(!tr.wrong) tr.errs++;                 /* попросил ход сам — тоже не выучено */
+  tr.peeked = true;
   const san = VARS[tr.target].moves[tr.path.length];
   const snap = {target:tr.target, len:tr.path.length};
   let m = null; try{ m = tr.g.move(san); }catch(e){ m = null; }
@@ -1230,8 +1221,22 @@ function trFinish(){
   if(!done.includes(tr.target)) done.push(tr.target);
   done.forEach(i => trRecord(i, tr.errs));
   tr.credited = done;
+
+  /* Расписание: оценка выводится из всего прогона — сколько ошибок и как быстро шли. */
+  const own = Math.ceil(VARS[tr.target].moves.length / 2);
+  const grade = srsGradeRun(tr.errs, Date.now() - (tr.t0 || Date.now()), own, tr.peeked);
+  tr.grade = grade;
+  done.forEach(i=>{
+    const st = srsOf(VARS[i], true);
+    st.t = st.t ? Math.round(st.t*0.7 + (Date.now()-(tr.t0||Date.now()))*0.3)
+                : (Date.now()-(tr.t0||Date.now()));
+    srsSchedule(st, grade);
+  });
+  srsSave();
+  tr.back = whenBack(srsOf(VARS[tr.target], true));
   buildOpts();
   trRender();
+  trBar();
 }
 
 /* ---- отрисовка ---- */
@@ -1243,6 +1248,16 @@ function trLine(){
     out.push(i === h.length-1 ? "<i>"+mv+"</i>" : "<b>"+mv+"</b>");
   }
   return out.join(" ");
+}
+function trBar(){
+  if(!tr){ $id("srsbar").classList.remove("on"); return; }
+  const p = bookProgress();
+  $id("srsbar").classList.add("on");
+  $id("srscount").innerHTML = `выучено <b>${p.pct}%</b> · ${BOOKS[bi].short}`;
+  $id("srsfill").style.width = p.pct + "%";
+  $id("srsmeta").textContent =
+    `уверенно ${p.learned} · в работе ${p.started} · не пройдено ${p.fresh}` +
+    ` · к повтору ${p.due} из ${p.total}`;
 }
 function trRender(){
   if(!tr) return;
@@ -1287,6 +1302,10 @@ function trRender(){
       `<span class="cnt${good?"":" bad"}">${good ? "чисто" : errWord}</span></div>`+
       `<p><b>${v.title}</b><br>${v.chapter}<br><span style="color:var(--mut)">${v.eval}</span></p>`+
       `<div class="trline">${trLine()}</div>`+
+      `<div class="srswhy">${tr.grade >= 5 ? "чисто и быстро — интервал вырос сильнее"
+        : tr.grade === 4 ? "чисто — интервал вырос"
+        : tr.grade === 3 ? "одна ошибка — интервал вырос осторожно"
+        : "с ошибками — вариант вернётся скоро"} · ${tr.back || ""}</div>`+
       `<p style="margin-top:8px;color:var(--mut);font-size:13px">`+
       `чисто ${st.clean} из ${st.runs}${learned(st) ? " · <span style=\"color:#7FBF8E\">выучен</span>" : ""}`+
       (tr.credited.length>1 ? ` · заодно засчитан ещё `+
@@ -1299,10 +1318,9 @@ function trRender(){
     note.className = "note ok";
     note.innerHTML =
       `<div class="head"><b>тренажёр</b><span class="cnt">другой вариант</span></div>`+
-      `<p style="color:#9FD6AC">✓ <b>${tr.offbook.num}${tr.offbook.played}</b> — ход правильный, `+
-      `он ведёт в вариант «${tr.offbook.title}»`+
-      (tr.offbook.more ? ` (и ещё ${plural(tr.offbook.more,"вариант","варианта","вариантов")})` : "")+
-      `. Но сейчас мы тренируем другой — сыграй иначе. Ошибка не засчитана.</p>`+
+      `<p style="color:#9FD6AC">✓ <b>${tr.offbook.num}${tr.offbook.played}</b> — так книга тоже играет. `+
+      `Но сейчас мы ведём другую линию — сыграй иначе. Ошибка не засчитана.</p>`+
+      `<div class="srswhy">${tr.offbook.why}</div>`+
       `<div class="trline">${trLine()}</div>`;
     add(null, "Показать ход", trShow);
     add(null, "Открыть в книге", trToBook);
@@ -1312,8 +1330,8 @@ function trRender(){
     note.className = "note err";
     note.innerHTML =
       `<div class="head"><b>тренажёр</b><span class="cnt bad">не то</span></div>`+
-      `<p>✕ <b>${tr.wrong.num}${tr.wrong.played}</b> — такого хода нет в репертуаре из этой позиции. `+
-      `Попробуй ещё или посмотри ответ.</p>`+
+      `<p>✕ <b>${tr.wrong.num}${tr.wrong.played}</b> — не то. Попробуй ещё или посмотри ответ.</p>`+
+      `<div class="srswhy">${tr.wrong.why}</div>`+
       `<div class="trline">${trLine()}</div>`;
     add(null, "Показать ход", trShow);
     add(null, "Открыть в книге", trToBook);
@@ -1440,7 +1458,6 @@ function trOpts(){
 /* ---- навигация ---- */
 const go = d => {
   clearSel();
-  if(srs) return;
   if(tr){ if(d < 0) trBack(); return; }
   if(expl){ if(d<0 && expl.g.history().length){ expl.g.undo(); expl.last=null; expl.err=null; renderExpl(); } return; }
   if(sub){
@@ -1476,11 +1493,6 @@ bw.addEventListener("touchend",e=>{
 document.addEventListener("keydown",e=>{
   if($id("modal").classList.contains("on")){ if(e.key==="Escape") closeModal(); return; }
   if($id("trmodal").classList.contains("on")){ if(e.key==="Escape") closeTr(); return; }
-  if(srs){
-    if(e.key==="Escape"){ srsQuit(); e.preventDefault(); }
-    else if(e.key==="Enter" && srs.answered){ srsNext(); e.preventDefault(); }
-    return;
-  }
   if(tr){
     if(e.key==="Escape"){ closeTrainer(); render(); e.preventDefault(); }
     else if(e.key==="ArrowLeft"){ trBack(); e.preventDefault(); }
@@ -1507,18 +1519,17 @@ document.addEventListener("keydown",e=>{
 });
 
 
-/* ================= интервальные повторения =================
-   Единица тренировки — карточка: позиция плюс ход, который надо найти. Карточки берутся
-   из всех книг сразу и опознаются по хэшу от позиции и хода, а не по номеру варианта, —
-   поэтому правки книг прогресс не ломают, а одинаковые начала линий (все они начинаются
-   с 1.g4 или 1.d4) схлопываются в одну карточку.
+/* ================= интервальные повторения по вариантам =================
+   Единица повторения — вариант целиком: прогон от начала до конца в тренажёре. Расписание
+   вешается на вариант, а не на отдельную позицию: оценка выводится из всего прогона, а не
+   из одного хода.
 
    Расписание — SM-2 с доработками, а не FSRS. Вся сила FSRS в том, что его параметры
    подгоняются под лог повторений конкретного человека; лога нет, на холодном старте FSRS
    с дефолтными весами работает примерно как SM-2, а кода и способов ошибиться заметно
    больше — в файле, который целиком инлайнится в один HTML без сборки и тестов. В
    состоянии при этом хранится всё, что нужно для будущей подгонки: число повторов,
-   провалов, интервалы и среднее время ответа. */
+   провалов, интервалы и время прогона. */
 
 const SRS_KEY = "chessbooks.srs.v1";
 const DAY_MS  = 86400000;
@@ -1527,36 +1538,6 @@ const today   = () => Math.floor((Date.now() - new Date().getTimezoneOffset()*60
 const dayStr  = () => new Date(Date.now() - new Date().getTimezoneOffset()*60000)
                         .toISOString().slice(0,10);
 
-/* Счёт у каждой книги свой: и колода, и дневной лимит, и статистика, и сброс.
-   legacy — карточки из первой версии, где колода была общая: раскладываем их по книгам
-   по мере того, как книгу открывают, чтобы уже накопленное не пропало. */
-let SRS = {v:2, opts:{}, books:{}, legacy:null};
-try{
-  const raw = localStorage.getItem(SRS_KEY);
-  if(raw){
-    const d = JSON.parse(raw);
-    if(d && typeof d === "object"){
-      SRS.opts = Object.assign(SRS.opts, d.opts || {});
-      if(d.books) SRS.books = d.books;
-      else if(d.cards) SRS.legacy = d.cards;   /* состояние v1 — общая колода */
-    }
-  }
-}catch(e){}                                   /* приватный режим или file:// без хранилища */
-function srsSave(){ try{ localStorage.setItem(SRS_KEY, JSON.stringify(SRS)); }catch(e){} }
-const bookKey = () => BOOKS[bi].id;
-function bookState(){
-  const k = bookKey();
-  return SRS.books[k] || (SRS.books[k] = {day:"", newDone:0, cards:{}});
-}
-/* Дневного лимита нет: тренироваться можно сколько угодно подряд, карточки кончаются
-   только вместе с книгой. Счётчик за день остаётся — но просто как статистика. */
-function srsTouchDay(){
-  const st = bookState();
-  if(st.day !== dayStr()){ st.day = dayStr(); st.newDone = 0; }
-  return st;
-}
-
-/* ---- опознание: ключ считаем от позиции, ход добавляем только для старых записей ---- */
 function hashOf(s){
   let a = 0x811c9dc5, b = 0x01000193;
   for(let i=0;i<s.length;i++){
@@ -1566,131 +1547,26 @@ function hashOf(s){
   }
   return a.toString(36) + b.toString(36);
 }
-const posKey = fen => fen.split(" ").slice(0,4).join(" ");
-const posId  = fen => hashOf(posKey(fen));
-const cardId = (fen, san) => hashOf(posKey(fen) + "|" + san);   /* ключ первых версий */
+/* Ключ варианта — хэш его ходов. Переименовали вариант или переставили в другую главу —
+   расписание сохранилось; поменяли сами ходы — это уже другое упражнение, счёт начинается
+   заново, и так честнее. */
+const varKey = v => hashOf(v.moves.join(" "));
 
-/* Хороший ли это ход или показанная ошибка. Явного признака в книгах не было — подписи
-   у побочных линий это свободный текст, а оценки движка местами расходятся с тем, что
-   пишет автор. Поэтому три источника по убыванию доверия:
-     1) флаг alt/bad, проставленный в книге вручную (четвёртый элемент в SUBS);
-     2) знаки самого автора в подписи: «?» — плохо, «!» и «!?» — играбельно;
-     3) оценка движка: принимаем, если ход теряет немного и сразу, и дальше по линии. */
-const BADWORDS = /\bплох|почему не|нельзя|ошибк|зевок|не работает/i;
-function subIsGood(cap, kind, lossFirst, lossWorst){
-  if(kind) return kind === "alt";
-  if(/!\?/.test(cap)) return true;
-  if(/\?/.test(cap))  return false;
-  if(/!/.test(cap))   return true;
-  if(BADWORDS.test(cap)) return false;
-  return lossFirst <= 50 && lossWorst <= 120;
+let SRS = {v:3, books:{}};
+try{
+  const raw = localStorage.getItem(SRS_KEY);
+  if(raw){
+    const d = JSON.parse(raw);
+    /* состояния прежних версий были про отдельные позиции — на варианты они не ложатся */
+    if(d && d.v === 3 && d.books) SRS.books = d.books;
+  }
+}catch(e){}                                   /* приватный режим или file:// без хранилища */
+function srsSave(){ try{ localStorage.setItem(SRS_KEY, JSON.stringify(SRS)); }catch(e){} }
+const bookKey = () => BOOKS[bi].id;
+function bookState(){
+  const k = bookKey();
+  return SRS.books[k] || (SRS.books[k] = {cards:{}});
 }
-
-/* ---- колода: по текущей книге, строится при первом входе и запоминается ----
-   Одна карточка — одна позиция. Если книга из этой позиции играет несколько разных
-   ходов (в разных вариантах — обычная вещь при перестановках), верны они все: книга
-   сама их рекомендует, просто дальше линии расходятся. Ошибкой остаётся только то,
-   что плохо именно здесь: помеченное как bad, опровержения и то, что не проходит
-   проверку движком. */
-let DECKS = {}, CARDS = null, CARD_BY_ID = null;
-function buildDeck(){
-  const key = bookKey();
-  if(DECKS[key]){ CARDS = DECKS[key].list; CARD_BY_ID = DECKS[key].by; return CARDS; }
-  const list = [], by = {};
-  const bk = BOOKS[bi], b = bi;
-  bk.vars.forEach(v=>{
-    if(v.off) return;                         /* партии целиком и чужие ошибки не спрашиваем */
-    const g = new ChessCls();
-    let prev = null;                          /* ход, которым сюда пришли */
-    for(let i=0;i<v.moves.length;i++){
-      const san = v.moves[i];
-      if(g.turn() === bk.side){
-        const fen = g.fen(), id = posId(fen);
-        const note = v.notes[String(i+1)] || "";
-        let c = by[id];
-        if(!c){
-          c = {id, b, vid:v.id, ply:i, fen, san, side:bk.side, note,
-               prio: v.prio || 0, title: v.title, chapter: v.chapter,
-               short: bk.short, moves: [], bad: [],
-               pf: prev ? prev.from : null, pt: prev ? prev.to : null,
-               pre: v.moves.slice(0, Math.min(i,4)).join(" ")};
-          c.moves.push({san, kind:"main", vid:v.id, title:v.title, note});
-          by[id] = c; list.push(c);
-        } else {
-          /* этот же ход из другого варианта — ничего нового; другой ход — тоже книжный */
-          if(!c.moves.some(x=>x.san === san))
-            c.moves.push({san, kind:"var", vid:v.id, title:v.title, note});
-          if((v.prio||0) > c.prio) c.prio = v.prio || 0;
-          if(!c.note && note) c.note = note;
-        }
-        /* побочные линии этой развилки: что-то из них книга считает приемлемым */
-        const lst = (v.subs && v.subs[String(i+1)]) || [];
-        const mainCp = (v.cp && v.cp.length > i+1) ? v.cp[i+1] : null;
-        lst.forEach(sv=>{
-          const p0 = sv.plies && sv.plies[0];
-          if(!p0) return;
-          const t = new ChessCls(fen);
-          let mv = null; try{ mv = t.move(p0.san); }catch(e){ mv = null; }
-          /* побочная линия начинается из этой же позиции — значит это альтернатива
-             нашему ходу, а не ответ соперника */
-          if(!mv || t.fen() !== p0.fen) return;
-          let lf = 0, lw = 0;
-          if(mainCp !== null && sv.cp && sv.cp.length > 1 && sv.cp[1] !== null){
-            const vals = sv.cp.slice(1).filter(x=>x !== null && x !== undefined);
-            const worst = vals.length ? (bk.side === "w" ? Math.min.apply(null, vals)
-                                                         : Math.max.apply(null, vals)) : sv.cp[1];
-            lf = bk.side === "w" ? mainCp - sv.cp[1] : sv.cp[1] - mainCp;
-            lw = bk.side === "w" ? mainCp - worst    : worst    - mainCp;
-          }
-          const good = subIsGood(sv.cap || "", sv.kind, lf, lw);
-          if(good){
-            if(!c.moves.some(x=>x.san === p0.san))
-              c.moves.push({san:p0.san, kind:"alt", cap:sv.cap||"", vid:v.id, title:v.title});
-          } else if(!c.bad.some(x=>x.san === p0.san)){
-            c.bad.push({san:p0.san, cap:sv.cap||""});
-          }
-        });
-      }
-      try{ prev = g.move(san); }catch(e){ break; }   /* битую линию просто обрываем */
-    }
-  });
-  /* ход, помеченный где-то как плохой, не должен считаться верным из-за другого варианта */
-  list.forEach(c=>{
-    c.bad.forEach(bd=>{
-      const k = c.moves.findIndex(x=>x.san === bd.san && x.kind === "alt");
-      if(k >= 0) c.moves.splice(k,1);
-    });
-  });
-  /* Прогресс прежних версий: там ключом была позиция ВМЕСТЕ с ходом, и на одну позицию
-     могло приходиться несколько записей. Забираем ту, у которой история длиннее. */
-  const st = bookState();
-  let moved = false;
-  list.forEach(c=>{
-    if(st.cards[c.id]) return;
-    let best = null;
-    c.moves.forEach(mv=>{
-      const old = cardId(c.fen, mv.san);
-      const rec = st.cards[old] || (SRS.legacy && SRS.legacy[old]);
-      if(rec && (!best || (rec.n||0)+(rec.l||0) > (best.n||0)+(best.l||0))) best = rec;
-    });
-    if(best){ st.cards[c.id] = best; moved = true; }
-    c.moves.forEach(mv=>{
-      const old = cardId(c.fen, mv.san);
-      if(st.cards[old]){ delete st.cards[old]; moved = true; }
-      if(SRS.legacy && SRS.legacy[old]){ delete SRS.legacy[old]; moved = true; }
-    });
-  });
-  if(SRS.legacy && !Object.keys(SRS.legacy).length) SRS.legacy = null;
-  if(moved) srsSave();
-  DECKS[key] = {list, by};
-  CARDS = list; CARD_BY_ID = by;
-  return CARDS;
-}
-/* Чем чаще развилка встречалась в реальных партиях, тем раньше карточка идёт в оборот.
-   Но вес варианта достаётся не всем его ходам: смысл варианта несёт ход с комментарием,
-   а подготовительные (1.g4, 3.c4 и прочая обязательная программа) получают лишь малую
-   долю — иначе очередь забивается началом одной и той же линии. */
-const cardWeight = c => (c.prio || 0) * (c.note ? 1 : 0.15) + (c.note ? 3 : 0) + 1;
 
 /* ---- расписание ---- */
 function srsSchedule(st, grade){
@@ -1705,14 +1581,13 @@ function srsSchedule(st, grade){
     else st.i = Math.max(1, Math.round((st.i||1) * (e/100) *
                                        (grade === 3 ? 0.7 : grade === 5 ? 1.15 : 1)));
     st.e = Math.min(280, Math.max(130, e + (grade === 5 ? 10 : grade === 3 ? -15 : 0)));
-    /* разброс, чтобы карточки не слипались в один день */
+    /* разброс, чтобы варианты не слипались в один день */
     const f = st.i >= 4 ? Math.round(st.i * 0.12) : 0;
     st.d = today() + st.i + (f ? Math.floor(Math.random()*(2*f+1)) - f : 0);
     st.n = (st.n||0) + 1;
   }
   st.g = grade;
 }
-const srsStat = id => bookState().cards[id];
 function whenBack(st){
   if(!st || !st.i) return "вернётся сегодня";
   const d = st.d - today();
@@ -1721,313 +1596,146 @@ function whenBack(st){
   return "вернётся через " + plural(d, "день", "дня", "дней");
 }
 
-/* ---- сборка сессии ---- */
-/* Насколько карточка держится. За «полностью выучено» берём интервал в 21 день: этот
-   порог у Anki отделяет зрелые карточки от разучиваемых — месячный цикл она уже пережила.
-   Но считать только зрелые нечестно по отношению к первым неделям: процент стоял бы на
-   нуле, пока интервалы растут. Поэтому каждая карточка даёт свою долю пути до зрелости —
-   интервал 21 день и больше это 1, семь дней — треть, невиданная — ноль. Процент по книге
-   это среднее по колоде: он двигается после каждого верного ответа и падает сразу, как
-   только карточку провалили (провал сбрасывает интервал в ноль). Рядом всегда стоит и
-   сырой счёт: сколько карточек держится уверенно, сколько в работе, сколько не видел. */
+/* Состояние варианта. Если его ещё не повторяли, но в старой статистике тренажёра есть
+   чистые прогоны, не начинаем с нуля: серия из двух чистых — это уже неделя интервала. */
+function srsOf(v, make){
+  const mine = bookState().cards, k = varKey(v);
+  let st = mine[k];
+  if(!st && make){
+    const old = statOf(bi, v);
+    st = mine[k] = {e:250, i:0, d:today(), n:0, l:0, t:0};
+    if(old && old.clean){
+      st.n = Math.min(3, old.clean);
+      st.i = Math.min(LEARNED_DAYS, old.streak >= 2 ? 7 : 2);
+      st.d = today() + st.i;
+      st.l = old.errs > 0 ? 1 : 0;
+    }
+  }
+  return st;
+}
+
+/* «Выучено» — вариант, чей интервал дорос до 21 дня: порог зрелости из Anki, месячный
+   цикл он уже пережил. Считать только зрелые нечестно к первым неделям — процент стоял бы
+   на нуле, пока интервалы растут. Поэтому каждый вариант даёт свою долю пути до зрелости:
+   21 день и больше — единица, семь дней — треть, ни разу не пройденный — ноль. Процент по
+   книге это среднее. Он растёт после каждого чистого прогона и падает сразу, как только
+   вариант провалили: провал сбрасывает интервал в ноль. */
 const LEARNED_DAYS = 21;
-const isLearned = st => !!st && (st.i || 0) >= LEARNED_DAYS;
 const strengthOf = st => st ? Math.min(1, (st.i || 0) / LEARNED_DAYS) : 0;
 
 function bookProgress(){
-  buildDeck();
-  const mine = bookState().cards, t = today();
-  let learned = 0, started = 0, fresh = 0, due = 0, sum = 0;
-  CARDS.forEach(c=>{
-    const st = mine[c.id];
-    sum += strengthOf(st);
+  const t = today();
+  let learned = 0, started = 0, fresh = 0, due = 0, sum = 0, total = 0;
+  activeIdx().forEach(i=>{
+    const st = srsOf(VARS[i], false);
+    total++; sum += strengthOf(st);
     if(!st){ fresh++; return; }
-    if(isLearned(st)) learned++; else started++;
+    if((st.i||0) >= LEARNED_DAYS) learned++; else started++;
     if(st.d <= t) due++;
   });
-  const total = CARDS.length;
   return {total, learned, started, fresh, due,
           pct: total ? Math.round(sum / total * 100) : 0};
 }
 
-/* Какую карточку показать следующей. Порядок такой:
-     0 — просроченные повторы, самые «перележавшие» вперёд (и с провалами в анамнезе);
-     1 — то, что подошло сегодня, сначала то, где он ошибался;
-     2 — новые, по весу (частота ошибки в партиях + разобранность в книге);
+/* Какой вариант дать следующим:
+     0 — просроченные, самые «перележавшие» вперёд (и с провалами в анамнезе);
+     1 — подошедшие сегодня, сначала те, где он ошибался;
+     2 — ни разу не пройденные, по весу (частота ошибки в партиях + разобранность);
      3 — повторы наперёд: ближайшие к забыванию, провальные подтягиваются раньше.
-   Свежепоказанное придерживаем, чтобы одна карточка не шла дважды подряд и чтобы
-   маленький набор не крутился по кругу; соседство одного варианта тоже штрафуем. */
-function pickNext(){
-  buildDeck();
-  const mine = bookState().cards, t = today();
-  const recent = (srs && srs.recent) || [];
-  const hold = Math.min(recent.length, Math.max(0, CARDS.length - 1));
+   Последние показанные придерживаем, чтобы один вариант не шёл дважды подряд. */
+const varWeight = v => (v.prio || 0) + 1;
+function srsPickVar(){
+  const set = activeIdx();
+  if(!set.length) return null;
+  const t = today(), recent = SRS_RECENT;
   let best = null, bb = 99, bk = 0;
-  for(let pass = 0; pass < 2 && !best; pass++){
-    for(let i = 0; i < CARDS.length; i++){
-      const c = CARDS[i];
-      if(pass === 0 && recent.indexOf(c.id) >= 0) continue;   /* второй заход — без придержки */
-      const st = mine[c.id];
+  for(let pass = 0; pass < 2 && best === null; pass++){
+    set.forEach(i=>{
+      const v = VARS[i];
+      if(pass === 0 && recent.indexOf(varKey(v)) >= 0) return;
+      const st = srsOf(v, false);
       let bucket, key;
-      if(!st)               { bucket = 2; key = -cardWeight(c); }
-      else if(st.d < t)     { bucket = 0; key = -((t - st.d) / Math.max(1, st.i || 1)) - (st.l || 0); }
-      else if(st.d === t)   { bucket = 1; key = -(st.l || 0); }
-      else                  { bucket = 3; key = st.d - (st.l || 0) * 0.5; }
-      if(srs && srs.lastVid === c.vid) bucket += 0.5;         /* не подряд из одной линии */
-      if(srs && srs.lastPre === c.pre) bucket += 0.25;        /* и не с тем же началом */
-      if(!best || bucket < bb || (bucket === bb && key < bk)){ best = c; bb = bucket; bk = key; }
-    }
+      if(!st)             { bucket = 2; key = -varWeight(v); }
+      else if(st.d < t)   { bucket = 0; key = -((t - st.d) / Math.max(1, st.i || 1)) - (st.l || 0); }
+      else if(st.d === t) { bucket = 1; key = -(st.l || 0); }
+      else                { bucket = 3; key = st.d - (st.l || 0) * 0.5; }
+      if(best === null || bucket < bb || (bucket === bb && key < bk)){ best = i; bb = bucket; bk = key; }
+    });
   }
   return best;
 }
-
-/* ---- сам режим ---- */
-const srsLabel = () => "🔁 Карточки — повторение по книге «" + BOOKS[bi].short + "»";
-function srsOpen(){
-  buildDeck();
-  srsTouchDay();
-  const p = bookProgress();
-  const bname = BOOKS[bi].short;
-  $id("srsplan").innerHTML =
-    `<span class="big">выучено ${p.pct}%</span>` +
-    `по книге «${bname}». Всего ${p.total}: ` +
-    `<b>${p.learned}</b> держится уверенно` +
-    (p.started ? `, <b>${p.started}</b> в работе` : "") +
-    (p.fresh ? `, <b>${p.fresh}</b> ещё не видел` : "") + `.` +
-    `<div class="srsline"><div class="srslinefill" style="width:${p.pct}%"></div></div>` +
-    (p.due ? `К повтору прямо сейчас: <b>${p.due}</b>. `
-           : `Срочного сейчас нет — буду показывать то, что ближе всего к забыванию, и новые. `) +
-    `Идти можно сколько угодно: карточки не кончатся.`;
-  $id("srsstart").disabled = !p.total;
-  $id("srsstart").textContent = p.total ? "Начать" : "В книге нет карточек";
-  $id("srsmsg").textContent = "";
-  $id("srsmodal").classList.add("on");
-}
-function srsClose(){ $id("srsmodal").classList.remove("on"); }
-
-function srsBegin(){
-  buildDeck();
-  if(!CARDS.length) return;
-  if(expl) closeExpl();
-  if(tr) closeTrainer();
-  sub = null;
-  srs = {done:0, right:0, wrong:0, recent:[], lastVid:null, lastPre:null,
-         card:null, g:null, t0:0, bad:0, shown:false, answered:false, fin:false};
-  $id("srsbtn").classList.add("on");
-  $id("srsbtn").textContent = "✕ Выйти из повторения";
-  $id("srsbar").classList.add("on");
-  srsNext();
-}
-function srsQuitQuiet(){                       /* только гасит режим, ничего не рисует */
-  srs = null;
-  $id("srsbtn").classList.remove("on");
-  $id("srsbtn").textContent = srsLabel();
-  $id("srsbar").classList.remove("on");
-  $id("hint").textContent = HINT_LABEL;
-}
-function srsQuit(){
-  srs = null;
-  $id("srsbtn").classList.remove("on");
-  $id("srsbtn").textContent = srsLabel();
-  $id("srsbar").classList.remove("on");
-  $id("hint").textContent = HINT_LABEL;
-  render();
-}
-function srsNext(){
-  if(!srs) return;
-  const c = pickNext();
-  if(!c){ srsFinish(); return; }
-  /* придерживаем недавние: одна карточка не идёт дважды подряд, а маленький набор
-     не крутится по кругу */
-  srs.recent.push(c.id);
-  const hold = Math.max(1, Math.min(8, CARDS.length - 1));
-  while(srs.recent.length > hold) srs.recent.shift();
-  srs.lastVid = c.vid; srs.lastPre = c.pre;
-  srs.card = c; srs.g = new ChessCls(c.fen);
-  srs.t0 = Date.now(); srs.bad = 0; srs.shown = false; srs.answered = false;
-  /* Подсветка на старте карточки — ход соперника, которым он сюда привёл. Раньше здесь
-     не сбрасывалось ничего, и на новой позиции горели клетки хода с прошлой карточки. */
-  srs.last = c.pf ? {from: c.pf, to: c.pt} : null;
-  clearSel();
-  board.orientation(c.side === "w" ? "white" : "black");
-  board.position(c.fen);
-  $id("gauge").classList.toggle("flip", board.orientation() === "black");
-  setTimeout(paintHL, 30);
-  srsBar();
-  $id("hint").textContent = "найдите ход за " + SIDE_WORDS[c.side].род +
-    (TOUCH ? " · касанием" : " · мышью или щелчком");
-  $id("pch").textContent = "повторение";
-  $id("pnm").textContent = "позиция скрыта до ответа";
-  $id("varpos").textContent = "";
-  paintGauge(null, "🎓");
-  $id("ev").textContent = "";
-  $id("missed").classList.remove("on");
-  const ask = $id("subs"); ask.innerHTML = "";
-  const sh = document.createElement("button");
-  sh.textContent = "показать ответ";
-  sh.onclick = srsShow;
-  ask.appendChild(sh);
-  const note = $id("note");
-  note.className = "note";
-  note.innerHTML = `<div class="head"><b>карточка ${srs.done+1}</b>` +
-    `<span class="cnt">${srs.card.short}</span></div>` +
-    `<div class="txt">Сделайте ход, который стоит в книге. Одна попытка: неверный ход
-     вернёт карточку в конец сегодняшней очереди.` +
-    ((srs.card.moves && srs.card.moves.length > 1)
-      ? ` Здесь книга играет отсюда не один ход — засчитается любой из них.` : ``) +
-    `</div>`;
-}
-function srsBar(){
-  if(!srs) return;
-  const p = bookProgress();
-  $id("srscount").innerHTML = `выучено <b>${p.pct}%</b> · ${BOOKS[bi].short}`;
-  $id("srsfill").style.width = p.pct + "%";
-  $id("srsmeta").textContent =
-    `уверенно ${p.learned} · в работе ${p.started} · не видел ${p.fresh}` +
-    ` · к повтору ${p.due} · за заход ${srs.right}✓ ${srs.wrong}✕`;
+let SRS_RECENT = [];
+function srsRemember(v){
+  SRS_RECENT.push(varKey(v));
+  const hold = Math.max(1, Math.min(6, activeIdx().length - 1));
+  while(SRS_RECENT.length > hold) SRS_RECENT.shift();
 }
 
-/* сколько у стороны вообще ходов: за вынужденный ход «легко» не ставим */
-function srsChoices(){
-  try{ return srs.g.moves().length; }catch(e){ return 30; }
-}
-function srsGrade(ms){
-  if(srs.bad || srs.shown) return 0;
-  let g = ms < 3000 ? 5 : ms < 10000 ? 4 : 3;
-  if(g === 5 && srsChoices() <= 6) g = 4;
-  return g;
-}
-
-function srsMove(from, to){
-  if(!srs || srs.answered) return "snapback";
-  const c = srs.card;
-  const pm = c.san.match(/=([QRBN])/);
-  let m = null;
-  try{ m = srs.g.move({from, to, promotion: pm ? pm[1].toLowerCase() : "q"}); }catch(e){ m = null; }
-  if(!m){ srs.bad = 1; srsAnswer(null, null); return "snapback"; }
-  const san = m.san; srs.g.undo();
-  const hit = (c.moves || []).find(x => x.san === san);
-  if(!hit) srs.bad = 1;
-  srsAnswer(san, hit || null);
-  return "snapback";
+/* Оценка за ПРОГОН, а не за один ход: чисто и быстро — «легко», чисто — «нормально»,
+   одна ошибка — «трудно», две и больше или подсмотренный ответ — провал. «Быстро» меряем
+   на свой ход, чтобы длинные варианты не штрафовались за длину. */
+function srsGradeRun(errs, ms, ownMoves, peeked){
+  if(peeked || errs >= 2) return 0;
+  if(errs === 1) return 3;
+  const per = ms / Math.max(1, ownMoves);
+  return per < 4000 ? 5 : 4;
 }
 
-function srsAnswer(played, hit){
-  const c = srs.card, ok = !!hit && !srs.bad && !srs.shown;
-  const ms = Date.now() - srs.t0;
-  srs.answered = true;
-  const mine = bookState().cards;
-  const st = mine[c.id] || (mine[c.id] = {e:250, i:0, d:today(), n:0, l:0, t:0});
-  const first = !st.n && !st.l;
-  st.t = st.t ? Math.round(st.t*0.7 + ms*0.3) : ms;
-  const grade = ok ? srsGrade(ms) : 0;
-  srsSchedule(st, grade);
-  if(first){ const bs = bookState(); bs.day = dayStr(); bs.newDone = (bs.newDone||0) + 1; }
-  srsSave();
-
-  srs.done++;
-  if(ok) srs.right++; else srs.wrong++;
-  /* провал уже сбросил срок на сегодня в srsSchedule — карточка вернётся сама,
-     но не сразу: сначала пройдут другие, которые придерживает srs.recent */
-  /* показываем правильный ход на доске */
-  const g2 = new ChessCls(c.fen);
-  let mv = null; try{ mv = g2.move(ok ? played : c.san); }catch(e){}
-  if(mv){ srs.last = mv; board.position(g2.fen()); setTimeout(paintHL, 30); }
-  srsBar();
-
-  const when = ok ? whenBack(st) : "вернётся в этой сессии";
-  const secs = (ms/1000).toFixed(1).replace(".", ",");
-  const head = srs.shown
-    ? `<span class="no">ответ показан</span><span class="mv">${c.san}</span>` +
-      `<span class="when">${when}</span>`
-    : ok
-    ? `<span class="ok">✓ верно</span><span class="mv">${played}</span>` +
-      `<span class="when">${secs} с · ${when}</span>`
-    : `<span class="no">✕ ${played ? "вы сыграли " + played : "так не сходить"}</span>` +
-      `<span class="mv">надо ${c.san}</span><span class="when">${when}</span>`;
-
-  /* короткая строка: почему засчитано или почему нет */
-  const badHit = played && (c.bad || []).find(x => x.san === played);
-  let why;
-  if(srs.shown)               why = "ответ показан, карточка вернётся";
-  else if(hit && hit.kind === "main") why = "ход основной линии этой карточки";
-  else if(hit && hit.kind === "var")  why = `книжный ход, но из варианта «${hit.title}» — ` +
-                                            `эта карточка ведёт ${c.san}`;
-  else if(hit && hit.kind === "alt")  why = `книга допускает и его: «${hit.cap}»`;
-  else if(badHit)             why = `книга разбирает этот ход как ошибку: «${badHit.cap}»`;
-  else if(played)             why = "из этой позиции такого хода в книге нет";
-  else                        why = "так фигура не ходит";
-  const note = $id("note");
-  note.className = "note";
-  const body = (hit && hit.kind === "var" && hit.note) ? hit.note
-             : (hit && hit.kind === "alt") ? ""
-             : (ok && grade === 5) ? ""
-             : (c.note || "");
-  note.innerHTML = `<div class="srsverdict">${head}</div>` +
-    `<div class="srswhy">${why}</div>` +
-    (body ? `<div class="txt">${body}</div>` : "") +
-    `<div class="srsfrom">${c.short} · ${c.title}</div>`;
-  note.classList.remove("flash"); void note.offsetWidth; note.classList.add("flash");
-  if(navigator.vibrate) navigator.vibrate(ok ? 18 : [25,60,25]);
-
-  /* дальше: верный ответ пролистывается сам, на ошибке ждём читателя */
-  const box = $id("subs");
-  box.innerHTML = "";
-  const nxt = document.createElement("button");
-  nxt.className = "go";
-  nxt.textContent = "Дальше";
-  nxt.onclick = ()=>{ srsNext(); };
-  box.appendChild(nxt);
-  const open = document.createElement("button");
-  open.textContent = "открыть вариант в книге";
-  open.onclick = ()=>{ const cc = srs.card; srsQuit(); srsGoTo(cc); };
-  box.appendChild(open);
-  if(ok) srs.tmr = setTimeout(()=>{ if(srs && srs.answered) srsNext(); }, 1100);
+/* Ходы, которые книга допускает в текущей позиции прогона: основной ход целевого варианта,
+   ходы других вариантов из ТОЙ ЖЕ позиции и приемлемые побочные линии. Совпадение считается
+   по позиции, а не по совпадению ходов вообще, — иначе привычная ошибка проходила бы как
+   «правильно, другая линия». */
+const BADWORDS = /\bплох|почему не|нельзя|ошибк|зевок|не работает/i;
+function subIsGood(cap, kind, lossFirst, lossWorst){
+  if(kind) return kind === "alt";
+  if(/!\?/.test(cap)) return true;
+  if(/\?/.test(cap))  return false;
+  if(/!/.test(cap))   return true;
+  if(BADWORDS.test(cap)) return false;
+  return lossFirst <= 50 && lossWorst <= 120;
 }
+const posKey = fen => fen.split(" ").slice(0,4).join(" ");
 
-/* показать ответ, не угадывая */
-function srsShow(){
-  if(!srs || srs.answered) return;
-  srs.shown = true; srsAnswer(srs.card.san, srs.card.moves[0]);
+function bookMovesHere(fen, exceptIdx){
+  const want = posKey(fen), out = [];
+  VARS.forEach((v,i)=>{
+    if(v.off) return;
+    const g = new ChessCls();
+    for(let k=0;k<v.moves.length;k++){
+      if(posKey(g.fen()) === want){
+        if(i !== exceptIdx && !out.some(x=>x.san === v.moves[k]))
+          out.push({san:v.moves[k], kind:"var", title:v.title});
+        break;
+      }
+      try{ g.move(v.moves[k]); }catch(e){ break; }
+    }
+  });
+  return out;
 }
-/* Сюда попадаем, только если в книге вообще нечего показать. */
-function srsFinish(){
-  srs.fin = true;
-  const p = bookProgress();
-  $id("srscount").innerHTML = `выучено <b>${p.pct}%</b> · ${BOOKS[bi].short}`;
-  $id("srsfill").style.width = p.pct + "%";
-  $id("srsmeta").textContent = `за заход ${srs.right}✓ ${srs.wrong}✕`;
-  $id("hint").textContent = "карточки кончились";
-  const note = $id("note");
-  note.className = "note";
-  note.innerHTML = `<div class="head"><b>карточек больше нет</b>` +
-    `<span class="cnt">выучено ${p.pct}%</span></div>` +
-    `<div class="txt">В этой книге показывать нечего. Возьмите другую книгу — там своя колода.</div>`;
-  const box = $id("subs"); box.innerHTML = "";
-  const out = document.createElement("button");
-  out.className = "go"; out.textContent = "выйти"; out.onclick = srsQuit;
-  box.appendChild(out);
+/* приемлемые и заведомо плохие ходы из побочных линий на этом полуходе целевого варианта */
+function subMovesHere(v, ply, fen){
+  const good = [], bad = [];
+  const lst = (v.subs && v.subs[String(ply+1)]) || [];
+  const mainCp = (v.cp && v.cp.length > ply+1) ? v.cp[ply+1] : null;
+  const side = SIDE();
+  lst.forEach(sv=>{
+    const p0 = sv.plies && sv.plies[0];
+    if(!p0) return;
+    const t = new ChessCls(fen);
+    let mv = null; try{ mv = t.move(p0.san); }catch(e){ mv = null; }
+    if(!mv || t.fen() !== p0.fen) return;      /* это ответ соперника, а не наша альтернатива */
+    let lf = 0, lw = 0;
+    if(mainCp !== null && sv.cp && sv.cp.length > 1 && sv.cp[1] !== null){
+      const vals = sv.cp.slice(1).filter(x=>x !== null && x !== undefined);
+      const worst = vals.length ? (side === "w" ? Math.min.apply(null, vals)
+                                                : Math.max.apply(null, vals)) : sv.cp[1];
+      lf = side === "w" ? mainCp - sv.cp[1] : sv.cp[1] - mainCp;
+      lw = side === "w" ? mainCp - worst    : worst    - mainCp;
+    }
+    (subIsGood(sv.cap || "", sv.kind, lf, lw) ? good : bad).push({san:p0.san, cap:sv.cap||""});
+  });
+  return {good, bad};
 }
-/* уйти из повторения к нужному месту книги */
-function srsGoTo(c){
-  if(bi !== c.b) setBook(c.b);
-  const k = VARS.findIndex(v => v.id === c.vid);
-  if(k >= 0){ vi = k; pi = Math.min(c.ply, VARS[vi].plies.length - 1); render(); }
-}
-
-function srsMsg(t){ $id("srsmsg").textContent = t; }
-
-$id("srsbtn").onclick   = ()=>{ if(srs){ srsQuit(); return; } srsOpen(); };
-$id("srsclose").onclick = srsClose;
-$id("srsmodal").onclick = e=>{ if(e.target === $id("srsmodal")) srsClose(); };
-$id("srsstart").onclick = ()=>{ srsClose(); srsBegin(); };
-$id("srsquit").onclick  = srsQuit;
-$id("srsreset").onclick = ()=>{
-  if(!confirm("Стереть прогресс повторений по книге «" + BOOKS[bi].short +
-              "»? Отменить будет нельзя.")) return;
-  const bs = bookState(); bs.cards = {}; bs.newDone = 0; srsSave();
-  srsOpen(); srsMsg("прогресс стёрт");   /* окно перерисовывается — сообщение после него */
-};
 
 if(window.innerWidth>=860) $id("sheet").open = true;
 paintBook(); buildOpts(); render();
