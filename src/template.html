@@ -960,7 +960,7 @@ function renderExpl(){
   let html=`<div class="head"><b>проводник</b>`+
     `<span class="cnt${expl.err?" bad":""}">${expl.err || state}</span></div>`;
   const HINT = (TOUCH ? "Коснитесь фигуры, потом клетки, куда её поставить"
-                      : "Двигайте фигуры на доске")
+                      : "Двигайте фигуры мышью или щёлкните по фигуре, а потом по полю")
              + " — приложение само найдёт совпадающие варианты"
              + (BOOKS.length>1 ? " во всех книгах" : "") + ", включая перестановки ходов.";
   html += `<p>${hist.length ? line.join(" ") : HINT}</p>`;
@@ -1260,7 +1260,7 @@ function trRender(){
   $id("hint").textContent = tr.done ? "вариант пройден"
                           : tr.wait ? чужой + " отвечают"
                           : (TOUCH ? "коснись фигуры за " + мой + ", потом клетки"
-                                   : "тащи фигуру за " + мой)
+                                   : "тащи или щёлкни фигуру за " + мой)
                             + (tr.stack.length ? " · ◀ забрать ход" : "");
 
   const note = $id("note"), subs = $id("subs");
@@ -1788,7 +1788,8 @@ function srsNext(){
   $id("gauge").classList.toggle("flip", board.orientation() === "black");
   setTimeout(paintHL, 30);
   srsBar();
-  $id("hint").textContent = "найдите ход за " + SIDE_WORDS[c.side].род;
+  $id("hint").textContent = "найдите ход за " + SIDE_WORDS[c.side].род +
+    (TOUCH ? " · касанием" : " · мышью или щелчком");
   $id("pch").textContent = "повторение";
   $id("pnm").textContent = "позиция скрыта до ответа";
   $id("varpos").textContent = "";
