@@ -581,6 +581,7 @@ const TOUCH = !!(window.matchMedia && window.matchMedia("(pointer: coarse)").mat
 let sel = null;        /* клетка, выбранная касанием или щелчком */
 let selBefore = null;  /* она же на момент начала перетаскивания */
 let gestEnd = 0;       /* конец жеста, который тапом считать нельзя: свайп, перетаскивание */
+let tapDone = {sq:null, t:0};  /* щелчок, уже разобранный в onDrop */
 
 const board = Chessboard("board", {
   position:"start", orientation:(BOOKS[0].side === "w" ? "white" : "black"),
@@ -598,12 +599,21 @@ const board = Chessboard("board", {
     return can;
   },
   /* Простой щелчок по фигуре chessboard.js отдаёт сюда как перетаскивание на месте,
-     from === to. Раньше это уходило в applyMove и получало «так не сходить»; теперь
-     щелчок доигрывает обработчик click ниже — там же, где тап. Возвращаем ему выбор,
-     снятый на время перетаскивания, и ничего не делаем сами: трогать позицию изнутри
-     onDrop нельзя, chessboard.js в этот момент ещё анимирует возврат фигуры. */
+     from === to. Обработчик click ниже до него НЕ доходит, и вот почему: на mousedown
+     chessboard.js вынимает фигуру из клетки и вешает её копию прямо в <body>. Поэтому
+     mousedown случается на картинке внутри клетки, а mouseup — на той же картинке, уже
+     лежащей в body; ближайший общий предок у них — сам body, и браузер шлёт click мимо
+     доски. На телефоне этого не видно: там drag выключен, фигура из клетки не уезжает,
+     и click спокойно доходит до #board. Значит выделение щелчком разбираем прямо здесь.
+     Позицию изнутри onDrop трогать нельзя — chessboard.js ещё анимирует возврат фигуры,
+     поэтому тап откладываем на следующий тик. */
   onDrop: (from, to) => {
-    if(from === to){ sel = selBefore; return "snapback"; }
+    if(from === to){
+      sel = selBefore;
+      tapDone = {sq:from, t:Date.now()};
+      setTimeout(()=>tapSquare(from), 0);
+      return "snapback";
+    }
     gestEnd = Date.now();
     return applyMove(from, to);
   },
@@ -660,11 +670,17 @@ function tapSquare(sq){
   sel = canPick(sq) ? sq : null;    /* по пустой или чужой клетке — просто сброс */
   paintSel();
 }
+/* Щелчки, при которых перетаскивание не начиналось: пустая клетка, чужая фигура в
+   тренажёре — их chessboard.js не трогает, и click доходит сюда обычным путём. */
 $id("board").addEventListener("click", e=>{
   const el = e.target.closest("[data-square]");
   if(!el) return;
   if(Date.now() - gestEnd < 250) return;    /* это хвост свайпа или перетаскивания */
-  tapSquare(el.getAttribute("data-square"));
+  const sq = el.getAttribute("data-square");
+  /* страховка на случай браузера, который всё-таки доставит click до доски:
+     тот же щелчок по той же клетке второй раз не разбираем */
+  if(sq === tapDone.sq && Date.now() - tapDone.t < 300) return;
+  tapSquare(sq);
 });
 
 let lastW = 0;
