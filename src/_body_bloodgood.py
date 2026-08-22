@@ -549,8 +549,8 @@ SUBS = {
     "before"
    ]
   ],
-  "9...g6": [   [    "9…e5 — у чёрных всё в порядке",
-    "e5 f3 Bc5 Qa4 Bf5 d3 Ra8 Qc2",
+  "9...g6": [   [    "9…e5",
+    "e5 f3 Bc5 Qa4 Bd4 Nc3 Qf6 Ne4 Qf4 d3",
     "before"
    ]
   ],
@@ -628,7 +628,7 @@ SUBS = {
    ]
   ],
   "7...Bc5": [   [    "7…Na6?",
-    "Na6 dxc6 Nc5 Qb5 Rb8 cxb7+ Bd7 Qc4",
+    "Na6 dxc6 Nc5 Qb5 a6 cxb7+ axb5 bxa8=Q+",
     "before"
    ],
    [    "7…Nxd5",
@@ -1029,8 +1029,8 @@ SUBS = {
     "before"
    ]
   ],
-  "7...Nbc6": [   [    "7…Be6 — равенство",
-    "Be6 Qb5+ Nbc6 Nxe7 Bxe7 Qxb7 O-O Bxc6 Rc8",
+  "7...Nbc6": [   [    "7…Be6",
+    "Be6 Qb5+ Nbc6 Nxe7 Qxe7 Bxc6+ bxc6 Qxc6+",
     "before"
    ],
    [    "7…Nxd5",
@@ -1228,8 +1228,8 @@ SUBS = {
     "h3 f5 g5 e5",
     "before"
    ],
-   [    "2.f3? — белые просто хуже",
-    "f3 e6 h4 Bd6 Bg2 h5 g5 Ne7",
+   [    "2.f3?",
+    "f3 e6 h4 Bd6 Rh3 Qxh4+ Rxh4 Bg3#",
     "before"
    ]
   ],
@@ -1416,8 +1416,8 @@ SUBS = {
     "before"
    ]
   ],
-  "10...Nc6": [   [    "10…Bxg5 — но есть 12.Bxb7",
-    "Bxg5 Nxg5 Qxg5 Bxb7 Nd7 Bxa8 Ngf6 Nf3",
+  "10...Nc6": [   [    "10…Bxg5!",
+    "Bxg5 Nxg5 Qxg5 Ne4 Qh5 Kd2 Nc6",
     "before"
    ]
   ]
