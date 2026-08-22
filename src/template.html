@@ -1039,12 +1039,16 @@ function trPick(cands){
   return cands[cands.length-1];
 }
 
-function trRecord(i, errs){
+function trRecord(i, errs, hot){
   const k = vkey(bi, VARS[i]);
   const st = TR_DB.stats[k] || (TR_DB.stats[k] = {runs:0, clean:0, streak:0, errs:0, last:null});
   st.runs++; st.errs += errs;
-  if(errs === 0){ st.clean++; st.streak++; st.last = "ok"; }
-  else          { st.streak = 0;           st.last = "err"; }
+  /* прогон по горячим следам виден в числе прогонов, но серию чистых не двигает —
+     иначе значок «выучен» набивался бы переигрыванием подряд */
+  if(!hot){
+    if(errs === 0){ st.clean++; st.streak++; st.last = "ok"; }
+    else          { st.streak = 0;           st.last = "err"; }
+  }
   trSave();
 }
 
@@ -1079,7 +1083,7 @@ function trBegin(target){
         stack:[], rewound:false};
   $id("trainbtn").classList.add("on");
   $id("trainbtn").textContent = "✕ Выйти из тренажёра";
-  trBar();
+  trBar();                                    /* сразу видно, если это повтор по горячим следам */
   trRender();
   trReply();
 }
@@ -1219,18 +1223,22 @@ function trFinish(){
   const done = activeIdx().filter(i => VARS[i].moves.length === tr.path.length
                                     && pathFits(VARS[i], tr.path));
   if(!done.includes(tr.target)) done.push(tr.target);
-  done.forEach(i => trRecord(i, tr.errs));
+  done.forEach(i => trRecord(i, tr.errs, isHot(srsOf(VARS[i], true))));
   tr.credited = done;
 
   /* Расписание: оценка выводится из всего прогона — сколько ошибок и как быстро шли. */
   const own = Math.ceil(VARS[tr.target].moves.length / 2);
-  const grade = srsGradeRun(tr.errs, Date.now() - (tr.t0 || Date.now()), own, tr.peeked);
+  const ms = Date.now() - (tr.t0 || Date.now());
+  const grade = srsGradeRun(tr.errs, ms, own, tr.peeked);
   tr.grade = grade;
+  tr.hot = isHot(srsOf(VARS[tr.target], true));
+  const now = Date.now();
   done.forEach(i=>{
     const st = srsOf(VARS[i], true);
-    st.t = st.t ? Math.round(st.t*0.7 + (Date.now()-(tr.t0||Date.now()))*0.3)
-                : (Date.now()-(tr.t0||Date.now()));
+    if(isHot(st)){ st.hot = (st.hot || 0) + 1; return; }   /* практика есть, зачёта нет */
+    st.t = st.t ? Math.round(st.t*0.7 + ms*0.3) : ms;
     srsSchedule(st, grade);
+    st.ts = now; st.hot = 0;
   });
   srsSave();
   tr.back = whenBack(srsOf(VARS[tr.target], true));
@@ -1255,9 +1263,11 @@ function trBar(){
   $id("srsbar").classList.add("on");
   $id("srscount").innerHTML = `выучено <b>${p.pct}%</b> · ${BOOKS[bi].short}`;
   $id("srsfill").style.width = p.pct + "%";
-  $id("srsmeta").textContent =
-    `уверенно ${p.learned} · в работе ${p.started} · не пройдено ${p.fresh}` +
-    ` · к повтору ${p.due} из ${p.total}`;
+  const hot = tr && isHot(srsOf(VARS[tr.target], false));
+  $id("srsmeta").textContent = hot
+    ? "повтор по горячим следам — этот прогон в счёт не пойдёт"
+    : `уверенно ${p.learned} · в работе ${p.started} · не пройдено ${p.fresh}` +
+      ` · к повтору ${p.due} из ${p.total}`;
 }
 function trRender(){
   if(!tr) return;
@@ -1302,10 +1312,13 @@ function trRender(){
       `<span class="cnt${good?"":" bad"}">${good ? "чисто" : errWord}</span></div>`+
       `<p><b>${v.title}</b><br>${v.chapter}<br><span style="color:var(--mut)">${v.eval}</span></p>`+
       `<div class="trline">${trLine()}</div>`+
-      `<div class="srswhy">${tr.grade >= 5 ? "чисто и быстро — интервал вырос сильнее"
+      `<div class="srswhy">${tr.hot
+        ? "повтор по горячим следам — в счёт не идёт: сразу после разбора вариант помнится и без памяти. "
+          + "Зачёт будет за следующий прогон, разнесённый по времени"
+        : (tr.grade >= 5 ? "чисто и быстро — интервал вырос сильнее"
         : tr.grade === 4 ? "чисто — интервал вырос"
         : tr.grade === 3 ? "одна ошибка — интервал вырос осторожно"
-        : "с ошибками — вариант вернётся скоро"} · ${tr.back || ""}</div>`+
+        : "с ошибками — вариант вернётся скоро")} · ${tr.back || ""}</div>`+
       `<p style="margin-top:8px;color:var(--mut);font-size:13px">`+
       `чисто ${st.clean} из ${st.runs}${learned(st) ? " · <span style=\"color:#7FBF8E\">выучен</span>" : ""}`+
       (tr.credited.length>1 ? ` · заодно засчитан ещё `+
@@ -1588,6 +1601,15 @@ function srsSchedule(st, grade){
   }
   st.g = grade;
 }
+/* Переигрывать вариант сразу после ошибки полезно — но это massed practice: он показывает
+   короткий след в голове, а не память. Такой прогон фиксируем как практику, но в расписание
+   не пускаем: ни интервал, ни лёгкость, ни серия чистых от него не двигаются. Настоящий
+   зачёт вариант получает со следующего прохождения, разнесённого по времени. Окно — десять
+   минут от последнего ЗАСЧИТАННОГО прогона; в обе стороны, так что и повторный провал по
+   горячим следам не штрафует второй раз. */
+const HOT_MS = 10 * 60 * 1000;
+const isHot = st => !!(st && st.ts) && (Date.now() - st.ts) < HOT_MS;
+
 function whenBack(st){
   if(!st || !st.i) return "вернётся сегодня";
   const d = st.d - today();
