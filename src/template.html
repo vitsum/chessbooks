@@ -1223,7 +1223,7 @@ function trFinish(){
   const done = activeIdx().filter(i => VARS[i].moves.length === tr.path.length
                                     && pathFits(VARS[i], tr.path));
   if(!done.includes(tr.target)) done.push(tr.target);
-  done.forEach(i => trRecord(i, tr.errs, isHot(srsOf(VARS[i], true))));
+  done.forEach(i => trRecord(i, tr.errs, !!skipReason(srsOf(VARS[i], true))));
   tr.credited = done;
 
   /* Расписание: оценка выводится из всего прогона — сколько ошибок и как быстро шли. */
@@ -1231,15 +1231,18 @@ function trFinish(){
   const ms = Date.now() - (tr.t0 || Date.now());
   const grade = srsGradeRun(tr.errs, ms, own, tr.peeked);
   tr.grade = grade;
-  tr.hot = isHot(srsOf(VARS[tr.target], true));
+  tr.skip = skipReason(srsOf(VARS[tr.target], true));
   const now = Date.now();
   done.forEach(i=>{
     const st = srsOf(VARS[i], true);
-    if(isHot(st)){ st.hot = (st.hot || 0) + 1; return; }   /* практика есть, зачёта нет */
+    if(skipReason(st)){ st.pr = (st.pr || 0) + 1; return; }  /* практика есть, зачёта нет */
     st.t = st.t ? Math.round(st.t*0.7 + ms*0.3) : ms;
     srsSchedule(st, grade);
-    st.ts = now; st.hot = 0;
+    st.ts = now; st.pr = 0;
   });
+  const ds = dayStats();
+  ds.runs = (ds.runs || 0) + 1;
+  if(!tr.skip) ds.counted = (ds.counted || 0) + 1;
   srsSave();
   tr.back = whenBack(srsOf(VARS[tr.target], true));
   buildOpts();
@@ -1263,11 +1266,14 @@ function trBar(){
   $id("srsbar").classList.add("on");
   $id("srscount").innerHTML = `выучено <b>${p.pct}%</b> · ${BOOKS[bi].short}`;
   $id("srsfill").style.width = p.pct + "%";
-  const hot = tr && isHot(srsOf(VARS[tr.target], false));
-  $id("srsmeta").textContent = hot
-    ? "повтор по горячим следам — этот прогон в счёт не пойдёт"
-    : `уверенно ${p.learned} · в работе ${p.started} · не пройдено ${p.fresh}` +
-      ` · к повтору ${p.due} из ${p.total}`;
+  const ds = dayStats();
+  const why = tr ? skipReason(srsOf(VARS[tr.target], false)) : "";
+  const сегодня = ` · сегодня ${ds.runs||0} прогонов, в счёт ${ds.counted||0}`;
+  $id("srsmeta").textContent =
+    (why === "hot"   ? "повтор по горячим следам — этот прогон в счёт не пойдёт"
+   : why === "early" ? "досрочно — срок ещё не подошёл, расписание не двинется"
+   : `уверенно ${p.learned} · в работе ${p.started} · не пройдено ${p.fresh}` +
+     ` · к повтору ${p.due} из ${p.total}`) + сегодня;
 }
 function trRender(){
   if(!tr) return;
@@ -1312,9 +1318,12 @@ function trRender(){
       `<span class="cnt${good?"":" bad"}">${good ? "чисто" : errWord}</span></div>`+
       `<p><b>${v.title}</b><br>${v.chapter}<br><span style="color:var(--mut)">${v.eval}</span></p>`+
       `<div class="trline">${trLine()}</div>`+
-      `<div class="srswhy">${tr.hot
+      `<div class="srswhy">${tr.skip === "hot"
         ? "повтор по горячим следам — в счёт не идёт: сразу после разбора вариант помнится и без памяти. "
           + "Зачёт будет за следующий прогон, разнесённый по времени"
+        : tr.skip === "early"
+        ? "досрочно — расписание не двигаем: срок повтора ещё не подошёл, а интервал растёт "
+          + "только за повтор, разнесённый во времени. Прогон засчитан как практика"
         : (tr.grade >= 5 ? "чисто и быстро — интервал вырос сильнее"
         : tr.grade === 4 ? "чисто — интервал вырос"
         : tr.grade === 3 ? "одна ошибка — интервал вырос осторожно"
@@ -1580,6 +1589,13 @@ function bookState(){
   const k = bookKey();
   return SRS.books[k] || (SRS.books[k] = {cards:{}});
 }
+/* Сколько прогонов сделано сегодня и сколько из них пошло в зачёт: без этого при честном
+   правиле «только по сроку» кажется, что тренируешься весь день, а не меняется ничего. */
+function dayStats(){
+  const bs = bookState();
+  if(bs.day !== dayStr()){ bs.day = dayStr(); bs.runs = 0; bs.counted = 0; }
+  return bs;
+}
 
 /* ---- расписание ---- */
 function srsSchedule(st, grade){
@@ -1609,6 +1625,20 @@ function srsSchedule(st, grade){
    горячим следам не штрафует второй раз. */
 const HOT_MS = 10 * 60 * 1000;
 const isHot = st => !!(st && st.ts) && (Date.now() - st.ts) < HOT_MS;
+/* Досрочный прогон — тот, у которого срок повтора ещё не подошёл. Тренироваться чаще
+   расписания можно и полезно, но лесенку интервалов такие прогоны не двигают: интервал
+   растёт только тогда, когда повтор реально разнесён во времени. Иначе за один вечер
+   вариант уезжает на три недели вперёд, ничего не доказав.
+   Отдельного исключения для «дня знакомства» не нужно: у нового варианта срок и так
+   сегодня, и первый прогон засчитывается; провал ставит срок на сегодня же, так что
+   доучка после ошибки тоже проходит в зачёт — но не раньше, чем через десять минут. */
+const isEarly = st => !!st && (st.d || 0) > today();
+/* почему прогон не пошёл в счёт — или пустая строка, если пошёл */
+function skipReason(st){
+  if(isHot(st))   return "hot";
+  if(isEarly(st)) return "early";
+  return "";
+}
 
 function whenBack(st){
   if(!st || !st.i) return "вернётся сегодня";
@@ -1627,9 +1657,9 @@ function srsOf(v, make){
     const old = statOf(bi, v);
     st = mine[k] = {e:250, i:0, d:today(), n:0, l:0, t:0};
     if(old && old.clean){
-      st.n = Math.min(3, old.clean);
-      st.i = Math.min(LEARNED_DAYS, old.streak >= 2 ? 7 : 2);
-      st.d = today() + st.i;
+      /* старые чистые прогоны поднимают ступеньку, но срок оставляем на сегодня:
+         первый настоящий прогон должен пройти в зачёт и откалибровать расписание */
+      st.n = Math.min(2, old.clean);
       st.l = old.errs > 0 ? 1 : 0;
     }
   }
