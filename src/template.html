@@ -1555,6 +1555,15 @@ document.addEventListener("keydown",e=>{
 
 const SRS_KEY = "chessbooks.srs.v1";
 const DAY_MS  = 86400000;
+const HOUR_MS = 3600000;
+/* Ступени изучения, как в Anki: новый вариант сперва возвращается через час, потом через
+   восемь часов, потом через сутки, и только пройдя все три чисто выходит на дневную
+   лесенку. Провал на ступени откатывает на первую. Провалившийся «выпускник» уходит на
+   короткое переучивание (час, восемь часов) — полностью в начало его не гоним, но и
+   прежний интервал не возвращаем. */
+const LEARN_STEPS   = [1*HOUR_MS, 8*HOUR_MS, 24*HOUR_MS];
+const RELEARN_STEPS = [1*HOUR_MS, 8*HOUR_MS];
+const tzOff = () => new Date().getTimezoneOffset()*60000;
 /* номер дня по местному времени: с ним «сегодня» не съезжает при смене часового пояса */
 const today   = () => Math.floor((Date.now() - new Date().getTimezoneOffset()*60000) / DAY_MS);
 const dayStr  = () => new Date(Date.now() - new Date().getTimezoneOffset()*60000)
@@ -1599,22 +1608,38 @@ function dayStats(){
 
 /* ---- расписание ---- */
 function srsSchedule(st, grade){
+  const now = Date.now();
+  const steps = st.rl ? RELEARN_STEPS : LEARN_STEPS;
   if(grade < 3){
     st.l = (st.l||0) + 1;
     st.e = Math.max(130, (st.e||250) - 20);
-    st.i = 0; st.d = today();                 /* вернётся сегодня же */
+    if(!inSteps(st)){ st.rl = 1; st.ipre = st.i || 1; }   /* выпускник — на переучивание */
+    st.step = 0;
+    const ms = (st.rl ? RELEARN_STEPS : LEARN_STEPS)[0];
+    st.i = ms / DAY_MS;                       /* доля дня: вклад в процент почти нулевой */
+    st.due = now + ms;
+  } else if(inSteps(st)){
+    st.n = (st.n||0) + 1;
+    if(st.step < steps.length){               /* закрываем текущую ступень и ждём её срок */
+      st.i = steps[st.step] / DAY_MS; st.due = now + steps[st.step]; st.step = st.step + 1;
+    } else {                                  /* все ступени пройдены — выпуск на лесенку */
+      const base = st.rl ? Math.max(1, Math.round((st.ipre||1) * 0.4))
+                         : (grade === 5 ? 3 : 2);
+      st.step = null; st.rl = 0; st.ipre = 0;
+      st.i = base; st.due = now + base * DAY_MS;
+    }
   } else {
     const e = st.e || 250;
-    if(!st.n)            st.i = grade === 5 ? 2 : 1;
-    else if(st.n === 1)  st.i = grade === 5 ? 6 : grade === 4 ? 4 : 3;
-    else st.i = Math.max(1, Math.round((st.i||1) * (e/100) *
-                                       (grade === 3 ? 0.7 : grade === 5 ? 1.15 : 1)));
+    st.i = Math.max(1, Math.round((st.i||1) * (e/100) *
+                                  (grade === 3 ? 0.7 : grade === 5 ? 1.15 : 1)));
     st.e = Math.min(280, Math.max(130, e + (grade === 5 ? 10 : grade === 3 ? -15 : 0)));
     /* разброс, чтобы варианты не слипались в один день */
     const f = st.i >= 4 ? Math.round(st.i * 0.12) : 0;
-    st.d = today() + st.i + (f ? Math.floor(Math.random()*(2*f+1)) - f : 0);
+    const days = Math.max(1, st.i + (f ? Math.floor(Math.random()*(2*f+1)) - f : 0));
     st.n = (st.n||0) + 1;
+    st.due = now + days * DAY_MS;
   }
+  st.d = Math.floor((st.due - tzOff()) / DAY_MS);   /* день срока — для сортировок и совместимости */
   st.g = grade;
 }
 /* Переигрывать вариант сразу после ошибки полезно — но это massed practice: он показывает
@@ -1632,7 +1657,10 @@ const isHot = st => !!(st && st.ts) && (Date.now() - st.ts) < HOT_MS;
    Отдельного исключения для «дня знакомства» не нужно: у нового варианта срок и так
    сегодня, и первый прогон засчитывается; провал ставит срок на сегодня же, так что
    доучка после ошибки тоже проходит в зачёт — но не раньше, чем через десять минут. */
-const isEarly = st => !!st && (st.d || 0) > today();
+/* срок хранится меткой времени: ступени короче суток, днями их не выразить */
+const dueMs  = st => (st && st.due != null) ? st.due : ((st ? (st.d||0) : 0)*DAY_MS + tzOff());
+const isEarly = st => !!st && Date.now() < dueMs(st);
+const inSteps = st => !!st && st.step != null;
 /* почему прогон не пошёл в счёт — или пустая строка, если пошёл */
 function skipReason(st){
   if(isHot(st))   return "hot";
@@ -1641,11 +1669,17 @@ function skipReason(st){
 }
 
 function whenBack(st){
-  if(!st || !st.i) return "вернётся сегодня";
-  const d = st.d - today();
-  if(d <= 0) return "вернётся сегодня";
-  if(d === 1) return "вернётся завтра";
-  return "вернётся через " + plural(d, "день", "дня", "дней");
+  if(!st) return "вернётся сегодня";
+  const ms = dueMs(st) - Date.now();
+  if(ms <= 0) return "можно повторять сейчас";
+  const day = Math.floor((dueMs(st) - tzOff()) / DAY_MS) - today();
+  if(day === 0){                              /* сегодня же — скажем когда именно */
+    const h = new Date(dueMs(st)).getHours();
+    if(ms < 1.5*HOUR_MS) return "вернётся через час";
+    return "вернётся " + (h >= 17 ? "сегодня вечером" : h >= 12 ? "сегодня днём" : "сегодня утром");
+  }
+  if(day === 1) return "вернётся завтра";
+  return "вернётся через " + plural(day, "день", "дня", "дней");
 }
 
 /* Состояние варианта. Если его ещё не повторяли, но в старой статистике тренажёра есть
@@ -1655,12 +1689,14 @@ function srsOf(v, make){
   let st = mine[k];
   if(!st && make){
     const old = statOf(bi, v);
-    st = mine[k] = {e:250, i:0, d:today(), n:0, l:0, t:0};
+    st = mine[k] = {e:250, i:0, n:0, l:0, t:0, step:0, due: Date.now()};
     if(old && old.clean){
-      /* старые чистые прогоны поднимают ступеньку, но срок оставляем на сегодня:
-         первый настоящий прогон должен пройти в зачёт и откалибровать расписание */
+      /* Старые чистые прогоны подтягивают вариант вперёд, но срок всегда «сейчас»:
+         первый настоящий прогон должен пройти в зачёт и откалибровать расписание. */
       st.n = Math.min(2, old.clean);
       st.l = old.errs > 0 ? 1 : 0;
+      if(old.clean >= 2){ st.step = null; st.i = 1; }   /* сразу на дневную лесенку */
+      else st.step = 2;                                 /* остаётся последняя ступень */
     }
   }
   return st;
@@ -1676,14 +1712,13 @@ const LEARNED_DAYS = 21;
 const strengthOf = st => st ? Math.min(1, (st.i || 0) / LEARNED_DAYS) : 0;
 
 function bookProgress(){
-  const t = today();
   let learned = 0, started = 0, fresh = 0, due = 0, sum = 0, total = 0;
   activeIdx().forEach(i=>{
     const st = srsOf(VARS[i], false);
     total++; sum += strengthOf(st);
-    if(!st){ fresh++; return; }
+    if(!st){ fresh++; due++; return; }        /* ни разу не пройденный ждёт прямо сейчас */
     if((st.i||0) >= LEARNED_DAYS) learned++; else started++;
-    if(st.d <= t) due++;
+    if(!isEarly(st)) due++;
   });
   return {total, learned, started, fresh, due,
           pct: total ? Math.round(sum / total * 100) : 0};
@@ -1707,10 +1742,14 @@ function srsPickVar(){
       if(pass === 0 && recent.indexOf(varKey(v)) >= 0) return;
       const st = srsOf(v, false);
       let bucket, key;
-      if(!st)             { bucket = 2; key = -varWeight(v); }
-      else if(st.d < t)   { bucket = 0; key = -((t - st.d) / Math.max(1, st.i || 1)) - (st.l || 0); }
-      else if(st.d === t) { bucket = 1; key = -(st.l || 0); }
-      else                { bucket = 3; key = st.d - (st.l || 0) * 0.5; }
+      const now = Date.now();
+      if(!st)                 { bucket = 2; key = -varWeight(v); }
+      else if(now >= dueMs(st)){
+        /* просрочка относительно собственного интервала: чем дольше лежит, тем раньше */
+        const over = (now - dueMs(st)) / Math.max(HOUR_MS, (st.i||1) * DAY_MS);
+        bucket = over > 0.05 ? 0 : 1; key = -over - (st.l || 0);
+      }
+      else                    { bucket = 3; key = dueMs(st) - (st.l || 0) * 0.5 * DAY_MS; }
       if(best === null || bucket < bb || (bucket === bb && key < bk)){ best = i; bb = bucket; bk = key; }
     });
   }
