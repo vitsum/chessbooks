@@ -195,6 +195,8 @@ h1{font-family:var(--disp);font-weight:600;font-size:clamp(22px,6vw,40px);line-h
 .srsverdict .no{color:var(--brick);font-weight:700}
 .srsverdict .mv{font-family:var(--mono);font-size:15px;color:var(--gold)}
 .srsverdict .when{font-family:var(--mono);font-size:11px;color:var(--mut)}
+.srswhy{font-size:12.5px;line-height:1.45;color:var(--tx);background:var(--panel2);
+  border-left:2px solid var(--rule);padding:6px 9px;margin:2px 0 8px}
 .srsfrom{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--mut);
   text-transform:uppercase;margin-top:8px}
 .trsum{font-family:var(--mono);font-size:11px;letter-spacing:.05em;color:var(--mut);
@@ -608,11 +610,15 @@ const board = Chessboard("board", {
   dropOffBoard:"snapback",
   /* в проводнике тянем что угодно, в тренажёре — только чёрные и только в свой ход */
   onDragStart: (src, piece) => {
-    selBefore = sel; clearSel();        /* пока фигуру тащат, подсветка выбора не нужна */
-    if(srs)  return !srs.answered && piece[0] === srs.card.side;
-    if(expl) return !expl.g.isGameOver();
-    if(tr)   return !tr.done && !tr.wait && tr.g.turn() === tr.side && piece[0] === tr.side;
-    return false;
+    const can = srs  ? (!srs.answered && piece[0] === srs.card.side)
+              : expl ? !expl.g.isGameOver()
+              : tr   ? (!tr.done && !tr.wait && tr.g.turn() === tr.side && piece[0] === tr.side)
+              : false;
+    /* Подсветку гасим, только если фигуру и правда потащили. Если тащить нельзя (щёлкнули
+       по чужой фигуре, чтобы её взять), выбор должен дожить до обработчика click — иначе
+       взятие щелчком не сработает. На телефоне это не проявлялось: там drag выключен. */
+    if(can){ selBefore = sel; clearSel(); }
+    return can;
   },
   /* Простой щелчок по фигуре chessboard.js отдаёт сюда как перетаскивание на месте,
      from === to. Раньше это уходило в applyMove и получало «так не сходить»; теперь
@@ -1552,9 +1558,8 @@ function srsNewLeft(){
   return Math.max(0, SRS.opts.newPerDay - st.newDone);
 }
 
-/* ---- опознание карточки: позиция без счётчиков ходов плюс сам ход ---- */
-function cardId(fen, san){
-  const s = fen.split(" ").slice(0,4).join(" ") + "|" + san;
+/* ---- опознание: ключ считаем от позиции, ход добавляем только для старых записей ---- */
+function hashOf(s){
   let a = 0x811c9dc5, b = 0x01000193;
   for(let i=0;i<s.length;i++){
     const c = s.charCodeAt(i);
@@ -1563,6 +1568,9 @@ function cardId(fen, san){
   }
   return a.toString(36) + b.toString(36);
 }
+const posKey = fen => fen.split(" ").slice(0,4).join(" ");
+const posId  = fen => hashOf(posKey(fen));
+const cardId = (fen, san) => hashOf(posKey(fen) + "|" + san);   /* ключ первых версий */
 
 /* Хороший ли это ход или показанная ошибка. Явного признака в книгах не было — подписи
    у побочных линий это свободный текст, а оценки движка местами расходятся с тем, что
@@ -1580,7 +1588,12 @@ function subIsGood(cap, kind, lossFirst, lossWorst){
   return lossFirst <= 50 && lossWorst <= 120;
 }
 
-/* ---- колода: по текущей книге, строится при первом входе и запоминается ---- */
+/* ---- колода: по текущей книге, строится при первом входе и запоминается ----
+   Одна карточка — одна позиция. Если книга из этой позиции играет несколько разных
+   ходов (в разных вариантах — обычная вещь при перестановках), верны они все: книга
+   сама их рекомендует, просто дальше линии расходятся. Ошибкой остаётся только то,
+   что плохо именно здесь: помеченное как bad, опровержения и то, что не проходит
+   проверку движком. */
 let DECKS = {}, CARDS = null, CARD_BY_ID = null;
 function buildDeck(){
   const key = bookKey();
@@ -1593,49 +1606,82 @@ function buildDeck(){
     for(let i=0;i<v.moves.length;i++){
       const san = v.moves[i];
       if(g.turn() === bk.side){
-        const fen = g.fen(), id = cardId(fen, san);
-        if(!by[id]){
-          const c = {id, b, vid:v.id, ply:i, fen, san, side:bk.side,
-                     note: v.notes[String(i+1)] || "",
-                     prio: v.prio || 0, title: v.title, chapter: v.chapter,
-                     short: bk.short, alts: [],
-                     pre: v.moves.slice(0, Math.min(i,4)).join(" ")};
-          /* другие ходы, которые книга считает приемлемыми на этой же развилке */
-          const lst = (v.subs && v.subs[String(i+1)]) || [];
-          const mainCp = (v.cp && v.cp.length > i+1) ? v.cp[i+1] : null;
-          lst.forEach(sv=>{
-            const p0 = sv.plies && sv.plies[0];
-            if(!p0) return;
-            const t = new ChessCls(fen);
-            let mv = null; try{ mv = t.move(p0.san); }catch(e){ mv = null; }
-            /* побочная линия начинается из этой же позиции — значит это альтернатива
-               нашему ходу, а не ответ соперника */
-            if(!mv || t.fen() !== p0.fen) return;
-            let lf = 0, lw = 0;
-            if(mainCp !== null && sv.cp && sv.cp.length > 1 && sv.cp[1] !== null){
-              const vals = sv.cp.slice(1).filter(x=>x !== null && x !== undefined);
-              const worst = vals.length ? (bk.side === "w" ? Math.min.apply(null, vals)
-                                                           : Math.max.apply(null, vals)) : sv.cp[1];
-              lf = bk.side === "w" ? mainCp - sv.cp[1] : sv.cp[1] - mainCp;
-              lw = bk.side === "w" ? mainCp - worst    : worst    - mainCp;
-            }
-            if(subIsGood(sv.cap || "", sv.kind, lf, lw)) c.alts.push({san:p0.san, cap:sv.cap||""});
-          });
+        const fen = g.fen(), id = posId(fen);
+        const note = v.notes[String(i+1)] || "";
+        let c = by[id];
+        if(!c){
+          c = {id, b, vid:v.id, ply:i, fen, san, side:bk.side, note,
+               prio: v.prio || 0, title: v.title, chapter: v.chapter,
+               short: bk.short, moves: [], bad: [],
+               pre: v.moves.slice(0, Math.min(i,4)).join(" ")};
+          c.moves.push({san, kind:"main", vid:v.id, title:v.title, note});
           by[id] = c; list.push(c);
+        } else {
+          /* этот же ход из другого варианта — ничего нового; другой ход — тоже книжный */
+          if(!c.moves.some(x=>x.san === san))
+            c.moves.push({san, kind:"var", vid:v.id, title:v.title, note});
+          if((v.prio||0) > c.prio) c.prio = v.prio || 0;
+          if(!c.note && note) c.note = note;
         }
+        /* побочные линии этой развилки: что-то из них книга считает приемлемым */
+        const lst = (v.subs && v.subs[String(i+1)]) || [];
+        const mainCp = (v.cp && v.cp.length > i+1) ? v.cp[i+1] : null;
+        lst.forEach(sv=>{
+          const p0 = sv.plies && sv.plies[0];
+          if(!p0) return;
+          const t = new ChessCls(fen);
+          let mv = null; try{ mv = t.move(p0.san); }catch(e){ mv = null; }
+          /* побочная линия начинается из этой же позиции — значит это альтернатива
+             нашему ходу, а не ответ соперника */
+          if(!mv || t.fen() !== p0.fen) return;
+          let lf = 0, lw = 0;
+          if(mainCp !== null && sv.cp && sv.cp.length > 1 && sv.cp[1] !== null){
+            const vals = sv.cp.slice(1).filter(x=>x !== null && x !== undefined);
+            const worst = vals.length ? (bk.side === "w" ? Math.min.apply(null, vals)
+                                                         : Math.max.apply(null, vals)) : sv.cp[1];
+            lf = bk.side === "w" ? mainCp - sv.cp[1] : sv.cp[1] - mainCp;
+            lw = bk.side === "w" ? mainCp - worst    : worst    - mainCp;
+          }
+          const good = subIsGood(sv.cap || "", sv.kind, lf, lw);
+          if(good){
+            if(!c.moves.some(x=>x.san === p0.san))
+              c.moves.push({san:p0.san, kind:"alt", cap:sv.cap||"", vid:v.id, title:v.title});
+          } else if(!c.bad.some(x=>x.san === p0.san)){
+            c.bad.push({san:p0.san, cap:sv.cap||""});
+          }
+        });
       }
       try{ g.move(san); }catch(e){ break; }    /* битую линию просто обрываем */
     }
   });
-  /* подбираем прогресс из общей колоды первой версии */
-  if(SRS.legacy){
-    const st = bookState();
-    list.forEach(c=>{
-      if(!st.cards[c.id] && SRS.legacy[c.id]){ st.cards[c.id] = SRS.legacy[c.id]; delete SRS.legacy[c.id]; }
+  /* ход, помеченный где-то как плохой, не должен считаться верным из-за другого варианта */
+  list.forEach(c=>{
+    c.bad.forEach(bd=>{
+      const k = c.moves.findIndex(x=>x.san === bd.san && x.kind === "alt");
+      if(k >= 0) c.moves.splice(k,1);
     });
-    if(!Object.keys(SRS.legacy).length) SRS.legacy = null;
-    srsSave();
-  }
+  });
+  /* Прогресс прежних версий: там ключом была позиция ВМЕСТЕ с ходом, и на одну позицию
+     могло приходиться несколько записей. Забираем ту, у которой история длиннее. */
+  const st = bookState();
+  let moved = false;
+  list.forEach(c=>{
+    if(st.cards[c.id]) return;
+    let best = null;
+    c.moves.forEach(mv=>{
+      const old = cardId(c.fen, mv.san);
+      const rec = st.cards[old] || (SRS.legacy && SRS.legacy[old]);
+      if(rec && (!best || (rec.n||0)+(rec.l||0) > (best.n||0)+(best.l||0))) best = rec;
+    });
+    if(best){ st.cards[c.id] = best; moved = true; }
+    c.moves.forEach(mv=>{
+      const old = cardId(c.fen, mv.san);
+      if(st.cards[old]){ delete st.cards[old]; moved = true; }
+      if(SRS.legacy && SRS.legacy[old]){ delete SRS.legacy[old]; moved = true; }
+    });
+  });
+  if(SRS.legacy && !Object.keys(SRS.legacy).length) SRS.legacy = null;
+  if(moved) srsSave();
   DECKS[key] = {list, by};
   CARDS = list; CARD_BY_ID = by;
   return CARDS;
@@ -1807,8 +1853,8 @@ function srsNext(){
     `<span class="cnt">${srs.card.short}</span></div>` +
     `<div class="txt">Сделайте ход, который стоит в книге. Одна попытка: неверный ход
      вернёт карточку в конец сегодняшней очереди.` +
-    ((srs.card.alts && srs.card.alts.length)
-      ? ` Здесь книга допускает не один ход — засчитается любой из них.` : ``) +
+    ((srs.card.moves && srs.card.moves.length > 1)
+      ? ` Здесь книга играет отсюда не один ход — засчитается любой из них.` : ``) +
     `</div>`;
 }
 function srsBar(){
@@ -1832,19 +1878,20 @@ function srsGrade(ms){
 
 function srsMove(from, to){
   if(!srs || srs.answered) return "snapback";
-  const pm = srs.card.san.match(/=([QRBN])/);
+  const c = srs.card;
+  const pm = c.san.match(/=([QRBN])/);
   let m = null;
   try{ m = srs.g.move({from, to, promotion: pm ? pm[1].toLowerCase() : "q"}); }catch(e){ m = null; }
-  if(!m){ srs.bad = 1; srsAnswer(null); return "snapback"; }
-  const alt = (srs.card.alts || []).find(a => a.san === m.san);
-  if(m.san === srs.card.san){ srsAnswer(m.san); return; }
-  if(alt){ srs.g.undo(); srsAnswer(m.san, alt); return "snapback"; }
-  const bad = m.san; srs.g.undo(); srs.bad = 1; srsAnswer(bad);
+  if(!m){ srs.bad = 1; srsAnswer(null, null); return "snapback"; }
+  const san = m.san; srs.g.undo();
+  const hit = (c.moves || []).find(x => x.san === san);
+  if(!hit) srs.bad = 1;
+  srsAnswer(san, hit || null);
   return "snapback";
 }
 
-function srsAnswer(played, alt){
-  const c = srs.card, ok = (played === c.san || !!alt) && !srs.bad && !srs.shown;
+function srsAnswer(played, hit){
+  const c = srs.card, ok = !!hit && !srs.bad && !srs.shown;
   const ms = Date.now() - srs.t0;
   srs.answered = true;
   const mine = bookState().cards;
@@ -1863,23 +1910,41 @@ function srsAnswer(played, alt){
   }
   /* показываем правильный ход на доске */
   const g2 = new ChessCls(c.fen);
-  let mv = null; try{ mv = g2.move(alt ? played : c.san); }catch(e){}
+  let mv = null; try{ mv = g2.move(ok ? played : c.san); }catch(e){}
   if(mv){ srs.last = mv; board.position(g2.fen()); setTimeout(paintHL, 30); }
   srsBar();
 
   const when = ok ? whenBack(st) : "вернётся в этой сессии";
   const secs = (ms/1000).toFixed(1).replace(".", ",");
-  const head = ok
+  const head = srs.shown
+    ? `<span class="no">ответ показан</span><span class="mv">${c.san}</span>` +
+      `<span class="when">${when}</span>`
+    : ok
     ? `<span class="ok">✓ верно</span><span class="mv">${played}</span>` +
-      (alt ? `<span class="when">книга ведёт ${c.san} · ${secs} с · ${when}</span>`
-           : `<span class="when">${secs} с · ${when}</span>`)
+      `<span class="when">${secs} с · ${when}</span>`
     : `<span class="no">✕ ${played ? "вы сыграли " + played : "так не сходить"}</span>` +
       `<span class="mv">надо ${c.san}</span><span class="when">${when}</span>`;
+
+  /* короткая строка: почему засчитано или почему нет */
+  const badHit = played && (c.bad || []).find(x => x.san === played);
+  let why;
+  if(srs.shown)               why = "ответ показан, карточка вернётся";
+  else if(hit && hit.kind === "main") why = "ход основной линии этой карточки";
+  else if(hit && hit.kind === "var")  why = `книжный ход, но из варианта «${hit.title}» — ` +
+                                            `эта карточка ведёт ${c.san}`;
+  else if(hit && hit.kind === "alt")  why = `книга допускает и его: «${hit.cap}»`;
+  else if(badHit)             why = `книга разбирает этот ход как ошибку: «${badHit.cap}»`;
+  else if(played)             why = "из этой позиции такого хода в книге нет";
+  else                        why = "так фигура не ходит";
   const note = $id("note");
   note.className = "note";
+  const body = (hit && hit.kind === "var" && hit.note) ? hit.note
+             : (hit && hit.kind === "alt") ? ""
+             : (ok && grade === 5) ? ""
+             : (c.note || "");
   note.innerHTML = `<div class="srsverdict">${head}</div>` +
-    (alt ? `<div class="txt">Тоже по книге: «${alt.cap}». Основная линия идёт ${c.san}.</div>`
-         : (ok && grade === 5 ? "" : `<div class="txt">${c.note || "Комментария к этому ходу в книге нет."}</div>`)) +
+    `<div class="srswhy">${why}</div>` +
+    (body ? `<div class="txt">${body}</div>` : "") +
     `<div class="srsfrom">${c.short} · ${c.title}</div>`;
   note.classList.remove("flash"); void note.offsetWidth; note.classList.add("flash");
   if(navigator.vibrate) navigator.vibrate(ok ? 18 : [25,60,25]);
@@ -1902,7 +1967,7 @@ function srsAnswer(played, alt){
 /* показать ответ, не угадывая */
 function srsShow(){
   if(!srs || srs.answered) return;
-  srs.shown = true; srsAnswer(srs.card.san);
+  srs.shown = true; srsAnswer(srs.card.san, srs.card.moves[0]);
 }
 function srsFinish(){
   srs.fin = true;
