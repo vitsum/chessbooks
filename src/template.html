@@ -157,6 +157,51 @@ h1{font-family:var(--disp);font-weight:600;font-size:clamp(22px,6vw,40px);line-h
 /* ---------- тренажёр ---------- */
 .modes{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 .modes .explbtn{flex:1 1 250px;width:auto;margin-top:0}
+/* ---------- интервальные повторения ---------- */
+.srsbar{display:none;margin-bottom:10px;background:var(--panel);border:1px solid var(--rule);
+  padding:9px 11px 10px}
+.srsbar.on{display:block}
+.srshead{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.srshead #srscount{font-family:var(--mono);font-size:12px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--tx)}
+.srshead #srscount b{color:var(--gold);font-weight:700}
+.srshead button{background:none;border:none;color:var(--mut);font-size:20px;line-height:1;
+  cursor:pointer;padding:0 2px}
+.srshead button:hover{color:var(--gold)}
+.srsprog{height:4px;background:var(--panel2);margin-top:7px;overflow:hidden}
+.srsfill{height:100%;width:0;background:var(--gold);transition:width .3s ease}
+@media(prefers-reduced-motion:reduce){.srsfill{transition:none}}
+.srsmeta{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--mut);margin-top:6px}
+.srsbody{padding:14px 16px 18px}
+.srsplan{font-size:14px;line-height:1.55;margin-bottom:14px}
+.srsplan b{color:var(--gold)}
+.srsplan .big{display:block;font-family:var(--disp);font-size:26px;color:var(--gold);
+  margin-bottom:4px}
+.srsopts{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
+.srsopts label{flex:1 1 150px;font-family:var(--mono);font-size:11px;letter-spacing:.05em;
+  color:var(--mut);display:flex;flex-direction:column;gap:4px}
+.srsopts input{background:var(--panel2);border:1px solid var(--rule);color:var(--tx);
+  font-family:var(--mono);font-size:14px;padding:7px 8px;width:100%}
+.srsio{margin-top:16px;border-top:1px solid var(--rule);padding-top:12px}
+.srsio summary{cursor:pointer;font-family:var(--mono);font-size:11px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--mut)}
+.srsio summary:hover{color:var(--gold)}
+.srsnote{font-size:12.5px;line-height:1.5;color:var(--mut);margin:10px 0}
+.srsiorow{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.srsiorow button{flex:1 1 auto;background:var(--panel2);border:1px solid var(--rule);
+  color:var(--tx);font-size:12.5px;padding:9px 10px;cursor:pointer}
+.srsiorow button:hover{border-color:var(--gold);color:var(--gold)}
+.srsiorow button.danger:hover{border-color:var(--brick);color:var(--brick)}
+#srsio{width:100%;height:74px;background:var(--panel2);border:1px solid var(--rule);
+  color:var(--mut);font-family:var(--mono);font-size:11px;padding:7px;resize:vertical}
+.srsmsg{font-family:var(--mono);font-size:11.5px;color:var(--gold);min-height:16px;margin-top:4px}
+.srsverdict{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.srsverdict .ok{color:#7FBF8E;font-weight:700}
+.srsverdict .no{color:var(--brick);font-weight:700}
+.srsverdict .mv{font-family:var(--mono);font-size:15px;color:var(--gold)}
+.srsverdict .when{font-family:var(--mono);font-size:11px;color:var(--mut)}
+.srsfrom{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--mut);
+  text-transform:uppercase;margin-top:8px}
 .trsum{font-family:var(--mono);font-size:11px;letter-spacing:.05em;color:var(--mut);
   padding:13px 16px 0;line-height:1.7}
 .trsum b{color:var(--gold);font-weight:400}
@@ -369,6 +414,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
 <div class="modes">
   <button class="explbtn" id="explbtn">⚑ Проводник — двигать фигуры и искать позицию в книге</button>
   <button class="explbtn" id="trainbtn">🎓 Тренажёр — разыграть варианты за чёрных</button>
+  <button class="explbtn" id="srsbtn">🔁 Повторение — карточки по всем книгам</button>
 </div>
 <div class="varpos" id="varpos"></div>
 
@@ -376,6 +422,41 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
   <div class="picklist" id="picklist">
     <div class="top"><b>Выберите вариант</b><button id="close" aria-label="Закрыть">×</button></div>
     <div id="opts"></div>
+  </div>
+</div>
+
+<div class="sheetbg" id="srsmodal" role="dialog" aria-modal="true" aria-label="Повторение">
+  <div class="picklist" id="srslist">
+    <div class="top"><b>Повторение</b><button id="srsclose" aria-label="Закрыть">×</button></div>
+    <div class="srsbody">
+      <div class="srsplan" id="srsplan"></div>
+      <div class="trgo"><button id="srsstart">Начать</button></div>
+      <div class="srsopts">
+        <label>новых карточек в день
+          <input type="number" id="srsnew" min="0" max="60" step="1"></label>
+        <label>карточек за сессию
+          <input type="number" id="srssize" min="5" max="80" step="5"></label>
+      </div>
+      <details class="srsio">
+        <summary>Перенос прогресса между устройствами</summary>
+        <p class="srsnote">Прогресс лежит в этом браузере. Чтобы забрать его на телефон
+          или вернуть после чистки кэша — скопируйте строку или скачайте файл, а на другом
+          устройстве вставьте сюда же и нажмите «загрузить». Загрузка не стирает то, что уже
+          есть: по каждой карточке остаётся запись с более длинной историей.</p>
+        <div class="srsiorow">
+          <button id="srsexport">скопировать строку</button>
+          <button id="srsdl">скачать файл</button>
+          <button id="srsfilebtn">выбрать файл</button>
+          <input type="file" id="srsfile" accept=".json,application/json" hidden>
+        </div>
+        <textarea id="srsio" spellcheck="false" placeholder="сюда вставить сохранённую строку"></textarea>
+        <div class="srsiorow">
+          <button id="srsimport">загрузить</button>
+          <button id="srsreset" class="danger">стереть прогресс</button>
+        </div>
+        <div class="srsmsg" id="srsmsg"></div>
+      </details>
+    </div>
   </div>
 </div>
 
@@ -396,6 +477,14 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
 
 <div class="grid">
   <div class="left">
+    <div class="srsbar" id="srsbar">
+      <div class="srshead">
+        <span id="srscount">повторение</span>
+        <button id="srsquit" title="Выйти из повторения" aria-label="Выйти">×</button>
+      </div>
+      <div class="srsprog"><div class="srsfill" id="srsfill"></div></div>
+      <div class="srsmeta" id="srsmeta"></div>
+    </div>
     <div class="boardrow">
       <div class="gauge" id="gauge" title="Оценка по книге">
         <div class="g-white" id="gwhite"></div>
@@ -526,6 +615,7 @@ BOOKS.forEach((bk,b)=>bk.vars.forEach((v,k)=>{
    выключен, а ходят двумя касаниями: тап по фигуре, тап по клетке. Мышью работает
    и то, и другое. */
 const TOUCH = !!(window.matchMedia && window.matchMedia("(pointer: coarse)").matches);
+let srs = null;        /* режим интервальных повторений, включается ниже */
 let sel = null;        /* клетка, выбранная касанием или щелчком */
 let selBefore = null;  /* она же на момент начала перетаскивания */
 let gestEnd = 0;       /* конец жеста, который тапом считать нельзя: свайп, перетаскивание */
@@ -537,6 +627,7 @@ const board = Chessboard("board", {
   /* в проводнике тянем что угодно, в тренажёре — только чёрные и только в свой ход */
   onDragStart: (src, piece) => {
     selBefore = sel; clearSel();        /* пока фигуру тащат, подсветка выбора не нужна */
+    if(srs)  return !srs.answered && piece[0] === srs.card.side;
     if(expl) return !expl.g.isGameOver();
     if(tr)   return !tr.done && !tr.wait && tr.g.turn() === tr.side && piece[0] === tr.side;
     return false;
@@ -558,6 +649,7 @@ const board = Chessboard("board", {
 });
 /* ход, сделанный любым способом: перетаскиванием или двумя касаниями */
 function applyMove(from, to){
+  if(srs) return srsMove(from, to);
   if(tr) return trDrop(from, to);
   if(!expl) return "snapback";
   /* chess.js 1.0-beta бросает исключение на нелегальном ходе. Без catch оно вылетает
@@ -571,12 +663,13 @@ function applyMove(from, to){
 }
 
 /* ---- ход двумя касаниями ---- */
-function liveGame(){ return expl ? expl.g : (tr ? tr.g : null); }
+function liveGame(){ return expl ? expl.g : (tr ? tr.g : (srs ? srs.g : null)); }
 /* брать фигуру можно там же, где её разрешено потянуть, — правила из onDragStart */
 function canPick(sq){
   const g = liveGame(); if(!g) return false;
   const p = g.get(sq);  if(!p) return false;
   if(expl) return !g.isGameOver() && p.color === g.turn();
+  if(srs)  return !srs.answered && p.color === srs.card.side;
   return !tr.done && !tr.wait && g.turn() === tr.side && p.color === tr.side;
 }
 function selMoves(){
@@ -653,6 +746,7 @@ function buildOpts(){
 })();
 
 function setBook(i){
+  if(srs) srsQuitQuiet();
   if(expl) closeExpl();
   if(tr) closeTrainer();
   bi = i; VARS = BOOKS[bi].vars; vi = 0; pi = 0; sub = null;
@@ -698,7 +792,7 @@ $id("modal").onclick=e=>{ if(e.target===$id("modal")) closeModal(); };
 function frame(){ return sub ? sub.plies[sub.i] : VARS[vi].plies[pi]; }
 function paintHL(){
   $(".square-55d63").removeClass("hl");
-  const p = expl ? expl.last : tr ? tr.last : frame();
+  const p = expl ? expl.last : tr ? tr.last : srs ? srs.last : frame();
   if(p && p.from) $("#board .square-"+p.from+", #board .square-"+p.to).addClass("hl");
   /* выбор мог устареть: сменился режим, сторона или сама позиция */
   if(sel && !canPick(sel)) sel = null;
@@ -842,6 +936,7 @@ function closeExpl(){                       /* только гасит режи�
 }
 function toggleExpl(){
   if(expl){ closeExpl(); render(); return; }
+  if(srs) srsQuitQuiet();
   if(tr) closeTrainer();
   sub=null; expl={g:new ChessCls(), last:null, err:null};
   $id("explbtn").classList.add("on");
@@ -1002,6 +1097,7 @@ function closeTrainer(){
   $id("hint").textContent = HINT_LABEL;
 }
 $id("trainbtn").onclick = ()=>{
+  if(srs) srsQuit();
   if(tr){ closeTrainer(); render(); return; }
   openTr();
 };
@@ -1359,6 +1455,7 @@ function trOpts(){
 /* ---- навигация ---- */
 const go = d => {
   clearSel();
+  if(srs) return;
   if(tr){ if(d < 0) trBack(); return; }
   if(expl){ if(d<0 && expl.g.history().length){ expl.g.undo(); expl.last=null; expl.err=null; renderExpl(); } return; }
   if(sub){
@@ -1394,6 +1491,11 @@ bw.addEventListener("touchend",e=>{
 document.addEventListener("keydown",e=>{
   if($id("modal").classList.contains("on")){ if(e.key==="Escape") closeModal(); return; }
   if($id("trmodal").classList.contains("on")){ if(e.key==="Escape") closeTr(); return; }
+  if(srs){
+    if(e.key==="Escape"){ srsQuit(); e.preventDefault(); }
+    else if(e.key==="Enter" && srs.answered){ srs.i++; srsNext(); e.preventDefault(); }
+    return;
+  }
   if(tr){
     if(e.key==="Escape"){ closeTrainer(); render(); e.preventDefault(); }
     else if(e.key==="ArrowLeft"){ trBack(); e.preventDefault(); }
@@ -1418,6 +1520,443 @@ document.addEventListener("keydown",e=>{
     if(i<BOOKS.length && i!==bi){ setBook(i); e.preventDefault(); }
   }
 });
+
+
+/* ================= интервальные повторения =================
+   Единица тренировки — карточка: позиция плюс ход, который надо найти. Карточки берутся
+   из всех книг сразу и опознаются по хэшу от позиции и хода, а не по номеру варианта, —
+   поэтому правки книг прогресс не ломают, а одинаковые начала линий (все они начинаются
+   с 1.g4 или 1.d4) схлопываются в одну карточку.
+
+   Расписание — SM-2 с доработками, а не FSRS. Вся сила FSRS в том, что его параметры
+   подгоняются под лог повторений конкретного человека; лога нет, на холодном старте FSRS
+   с дефолтными весами работает примерно как SM-2, а кода и способов ошибиться заметно
+   больше — в файле, который целиком инлайнится в один HTML без сборки и тестов. В
+   состоянии при этом хранится всё, что нужно для будущей подгонки: число повторов,
+   провалов, интервалы и среднее время ответа. */
+
+const SRS_KEY = "chessbooks.srs.v1";
+const DAY_MS  = 86400000;
+/* номер дня по местному времени: с ним «сегодня» не съезжает при смене часового пояса */
+const today   = () => Math.floor((Date.now() - new Date().getTimezoneOffset()*60000) / DAY_MS);
+const dayStr  = () => new Date(Date.now() - new Date().getTimezoneOffset()*60000)
+                        .toISOString().slice(0,10);
+
+let SRS = {v:1, opts:{newPerDay:8, sessionMax:20}, day:"", newDone:0, cards:{}};
+try{
+  const raw = localStorage.getItem(SRS_KEY);
+  if(raw){
+    const d = JSON.parse(raw);
+    if(d && d.cards){
+      SRS.cards = d.cards;
+      SRS.opts  = Object.assign(SRS.opts, d.opts || {});
+      SRS.day   = d.day || ""; SRS.newDone = d.newDone || 0;
+    }
+  }
+}catch(e){}                                   /* приватный режим или file:// без хранилища */
+function srsSave(){ try{ localStorage.setItem(SRS_KEY, JSON.stringify(SRS)); }catch(e){} }
+function srsNewLeft(){
+  if(SRS.day !== dayStr()){ SRS.day = dayStr(); SRS.newDone = 0; }
+  return Math.max(0, SRS.opts.newPerDay - SRS.newDone);
+}
+
+/* ---- опознание карточки: позиция без счётчиков ходов плюс сам ход ---- */
+function cardId(fen, san){
+  const s = fen.split(" ").slice(0,4).join(" ") + "|" + san;
+  let a = 0x811c9dc5, b = 0x01000193;
+  for(let i=0;i<s.length;i++){
+    const c = s.charCodeAt(i);
+    a = Math.imul(a ^ c, 0x01000193) >>> 0;
+    b = Math.imul(b ^ c, 0x85ebca6b) >>> 0;
+  }
+  return a.toString(36) + b.toString(36);
+}
+
+/* ---- колода: строится один раз, при первом входе в режим ---- */
+let CARDS = null, CARD_BY_ID = null;
+function buildDeck(){
+  if(CARDS) return CARDS;
+  CARDS = []; CARD_BY_ID = {};
+  BOOKS.forEach((bk,b)=>{
+    bk.vars.forEach(v=>{
+      if(v.off) return;                       /* партии целиком и чужие ошибки не спрашиваем */
+      const g = new ChessCls();
+      for(let i=0;i<v.moves.length;i++){
+        const san = v.moves[i];
+        if(g.turn() === bk.side){
+          const fen = g.fen(), id = cardId(fen, san);
+          if(!CARD_BY_ID[id]){
+            const c = {id, b, vid:v.id, ply:i, fen, san, side:bk.side,
+                       note: v.notes[String(i+1)] || "",
+                       prio: v.prio || 0, title: v.title, chapter: v.chapter,
+                       short: bk.short,
+                       pre: v.moves.slice(0, Math.min(i,4)).join(" ")};
+            CARD_BY_ID[id] = c; CARDS.push(c);
+          }
+        }
+        try{ g.move(san); }catch(e){ break; }  /* битую линию просто обрываем */
+      }
+    });
+  });
+  return CARDS;
+}
+/* Чем чаще развилка встречалась в реальных партиях, тем раньше карточка идёт в оборот.
+   Но вес варианта достаётся не всем его ходам: смысл варианта несёт ход с комментарием,
+   а подготовительные (1.g4, 3.c4 и прочая обязательная программа) получают лишь малую
+   долю — иначе очередь забивается началом одной и той же линии. */
+const cardWeight = c => (c.prio || 0) * (c.note ? 1 : 0.15) + (c.note ? 3 : 0) + 1;
+
+/* ---- расписание ---- */
+function srsSchedule(st, grade){
+  if(grade < 3){
+    st.l = (st.l||0) + 1;
+    st.e = Math.max(130, (st.e||250) - 20);
+    st.i = 0; st.d = today();                 /* вернётся сегодня же */
+  } else {
+    const e = st.e || 250;
+    if(!st.n)            st.i = grade === 5 ? 2 : 1;
+    else if(st.n === 1)  st.i = grade === 5 ? 6 : grade === 4 ? 4 : 3;
+    else st.i = Math.max(1, Math.round((st.i||1) * (e/100) *
+                                       (grade === 3 ? 0.7 : grade === 5 ? 1.15 : 1)));
+    st.e = Math.min(280, Math.max(130, e + (grade === 5 ? 10 : grade === 3 ? -15 : 0)));
+    /* разброс, чтобы карточки не слипались в один день */
+    const f = st.i >= 4 ? Math.round(st.i * 0.12) : 0;
+    st.d = today() + st.i + (f ? Math.floor(Math.random()*(2*f+1)) - f : 0);
+    st.n = (st.n||0) + 1;
+  }
+  st.g = grade;
+}
+const srsStat = id => SRS.cards[id];
+function whenBack(st){
+  if(!st || !st.i) return "вернётся сегодня";
+  const d = st.d - today();
+  if(d <= 0) return "вернётся сегодня";
+  if(d === 1) return "вернётся завтра";
+  return "вернётся через " + plural(d, "день", "дня", "дней");
+}
+
+/* ---- сборка сессии ---- */
+function srsPlan(){
+  buildDeck();
+  const t = today(), due = [], fresh = [];
+  CARDS.forEach(c=>{
+    const st = SRS.cards[c.id];
+    if(st){ if(st.d <= t) due.push(c); } else fresh.push(c);
+  });
+  due.sort((x,y)=>{
+    const X = SRS.cards[x.id], Y = SRS.cards[y.id];
+    return (t - Y.d) - (t - X.d) || (Y.l||0) - (X.l||0);
+  });
+  fresh.sort((x,y)=> cardWeight(y) - cardWeight(x));
+  return {due, fresh, t};
+}
+function buildSession(){
+  const {due, fresh} = srsPlan();
+  const max = SRS.opts.sessionMax;
+  const take = due.slice(0, max);
+  const room = Math.max(0, max - take.length);
+  /* Два ограничения на новые карточки. Не больше двух из одного варианта — иначе весь
+     заход уходит в начало одной линии. И не больше 70% из одной книги: «Мои промахи»
+     по весу перебивают всё остальное, но повторение должно идти по всем книгам, а не
+     упираться в одну на неделю вперёд. */
+  const perVar = {}, perBook = {}, news = [];
+  const limit = Math.min(room, srsNewLeft());
+  const bookCap = Math.max(1, Math.ceil(limit * 0.7));
+  for(const c of fresh){
+    if(news.length >= limit) break;
+    const kv = c.b + "/" + c.vid;
+    if((perVar[kv] || 0) >= 2) continue;
+    if((perBook[c.b] || 0) >= bookCap) continue;
+    perVar[kv] = (perVar[kv]||0) + 1;
+    perBook[c.b] = (perBook[c.b]||0) + 1;
+    news.push(c);
+  }
+  return spreadOut(take.concat(news));
+}
+/* интерференция: рядом не должны стоять карточки из одной книги и с одинаковым началом */
+function spreadOut(list){
+  const pool = list.slice(), out = [];
+  let prev = null;
+  while(pool.length){
+    let k = pool.findIndex(c => !prev || (c.b !== prev.b && c.pre !== prev.pre));
+    if(k < 0) k = pool.findIndex(c => !prev || c.pre !== prev.pre);
+    if(k < 0) k = 0;
+    out.push(pool[k]); prev = pool[k]; pool.splice(k, 1);
+  }
+  return out;
+}
+
+/* ---- сам режим ---- */
+function srsOpen(){
+  buildDeck();
+  const {due, fresh} = srsPlan();
+  const left = srsNewLeft();
+  const n = Math.min(SRS.opts.sessionMax, due.length + Math.min(fresh.length, left));
+  const known = Object.keys(SRS.cards).length;
+  $id("srsplan").innerHTML = n
+    ? `<span class="big">${plural(n, "карточка", "карточки", "карточек")}</span>` +
+      `на сегодня: <b>${due.length}</b> на повтор` +
+      (Math.min(fresh.length, left) ? ` и <b>${Math.min(fresh.length, left)}</b> новых` : "") +
+      `.<br>Всего в колоде ${CARDS.length}, начато ${known}.`
+    : `<span class="big">на сегодня всё</span>Повторять сейчас нечего.` +
+      (fresh.length ? ` Новые карточки откроются завтра — или поднимите дневной лимит ниже.` : "") +
+      `<br>Всего в колоде ${CARDS.length}, начато ${known}.`;
+  $id("srsstart").disabled = !n;
+  $id("srsstart").textContent = n ? "Начать" : "Нечего повторять";
+  $id("srsnew").value  = SRS.opts.newPerDay;
+  $id("srssize").value = SRS.opts.sessionMax;
+  $id("srsmsg").textContent = "";
+  $id("srsmodal").classList.add("on");
+}
+function srsClose(){ $id("srsmodal").classList.remove("on"); }
+
+function srsBegin(){
+  const queue = buildSession();
+  if(!queue.length) return;
+  if(expl) closeExpl();
+  if(tr) closeTrainer();
+  sub = null;
+  srs = {queue, i:0, total:queue.length, done:0, right:0, wrong:0,
+         card:null, g:null, t0:0, bad:0, shown:false, answered:false, fin:false};
+  $id("srsbtn").classList.add("on");
+  $id("srsbtn").textContent = "✕ Выйти из повторения";
+  $id("srsbar").classList.add("on");
+  srsNext();
+}
+function srsQuitQuiet(){                       /* только гасит режим, ничего не рисует */
+  srs = null;
+  $id("srsbtn").classList.remove("on");
+  $id("srsbtn").textContent = "🔁 Повторение — карточки по всем книгам";
+  $id("srsbar").classList.remove("on");
+  $id("hint").textContent = HINT_LABEL;
+}
+function srsQuit(){
+  srs = null;
+  $id("srsbtn").classList.remove("on");
+  $id("srsbtn").textContent = "🔁 Повторение — карточки по всем книгам";
+  $id("srsbar").classList.remove("on");
+  $id("hint").textContent = HINT_LABEL;
+  render();
+}
+function srsNext(){
+  if(!srs) return;
+  if(srs.i >= srs.queue.length){ srsFinish(); return; }
+  const c = srs.queue[srs.i];
+  srs.card = c; srs.g = new ChessCls(c.fen);
+  srs.t0 = Date.now(); srs.bad = 0; srs.shown = false; srs.answered = false;
+  clearSel();
+  board.orientation(c.side === "w" ? "white" : "black");
+  board.position(c.fen);
+  $id("gauge").classList.toggle("flip", board.orientation() === "black");
+  setTimeout(paintHL, 30);
+  srsBar();
+  $id("hint").textContent = "найдите ход за " + SIDE_WORDS[c.side].род;
+  $id("pch").textContent = "повторение";
+  $id("pnm").textContent = "позиция скрыта до ответа";
+  $id("varpos").textContent = "";
+  paintGauge(null, "🎓");
+  $id("ev").textContent = "";
+  $id("missed").classList.remove("on");
+  const ask = $id("subs"); ask.innerHTML = "";
+  const sh = document.createElement("button");
+  sh.textContent = "показать ответ";
+  sh.onclick = srsShow;
+  ask.appendChild(sh);
+  const note = $id("note");
+  note.className = "note";
+  note.innerHTML = `<div class="head"><b>карточка ${srs.i+1}</b>` +
+    `<span class="cnt">${srs.card.short}</span></div>` +
+    `<div class="txt">Сделайте ход, который стоит в книге. Одна попытка: неверный ход
+     вернёт карточку в конец сегодняшней очереди.</div>`;
+}
+function srsBar(){
+  if(!srs) return;
+  const n = srs.queue.length;
+  $id("srscount").innerHTML = `повторение · <b>${Math.min(srs.i+1, n)}</b> / ${n}`;
+  $id("srsfill").style.width = (srs.done / Math.max(1, n) * 100) + "%";
+  $id("srsmeta").textContent = `верно ${srs.right} · с ошибкой ${srs.wrong}`;
+}
+
+/* сколько у стороны вообще ходов: за вынужденный ход «легко» не ставим */
+function srsChoices(){
+  try{ return srs.g.moves().length; }catch(e){ return 30; }
+}
+function srsGrade(ms){
+  if(srs.bad || srs.shown) return 0;
+  let g = ms < 3000 ? 5 : ms < 10000 ? 4 : 3;
+  if(g === 5 && srsChoices() <= 6) g = 4;
+  return g;
+}
+
+function srsMove(from, to){
+  if(!srs || srs.answered) return "snapback";
+  const pm = srs.card.san.match(/=([QRBN])/);
+  let m = null;
+  try{ m = srs.g.move({from, to, promotion: pm ? pm[1].toLowerCase() : "q"}); }catch(e){ m = null; }
+  if(!m){ srs.bad = 1; srsAnswer(null); return "snapback"; }
+  if(m.san !== srs.card.san){ const bad = m.san; srs.g.undo(); srs.bad = 1; srsAnswer(bad); return "snapback"; }
+  srsAnswer(m.san);
+}
+
+function srsAnswer(played){
+  const c = srs.card, ok = played === c.san && !srs.bad && !srs.shown;
+  const ms = Date.now() - srs.t0;
+  srs.answered = true;
+  const st = SRS.cards[c.id] || (SRS.cards[c.id] = {e:250, i:0, d:today(), n:0, l:0, t:0});
+  const first = !st.n && !st.l;
+  st.t = st.t ? Math.round(st.t*0.7 + ms*0.3) : ms;
+  const grade = ok ? srsGrade(ms) : 0;
+  srsSchedule(st, grade);
+  if(first){ SRS.day = dayStr(); SRS.newDone = (SRS.newDone||0) + 1; }
+  srsSave();
+
+  srs.done++;
+  if(ok) srs.right++; else srs.wrong++;
+  if(!ok){                                    /* ошибка — карточка вернётся в этой же сессии */
+    srs.queue.push(c);
+  }
+  /* показываем правильный ход на доске */
+  const g2 = new ChessCls(c.fen);
+  let mv = null; try{ mv = g2.move(c.san); }catch(e){}
+  if(mv){ srs.last = mv; board.position(g2.fen()); setTimeout(paintHL, 30); }
+  srsBar();
+
+  const when = ok ? whenBack(st) : "вернётся в этой сессии";
+  const secs = (ms/1000).toFixed(1).replace(".", ",");
+  const head = ok
+    ? `<span class="ok">✓ верно</span><span class="mv">${c.san}</span>` +
+      `<span class="when">${secs} с · ${when}</span>`
+    : `<span class="no">✕ ${played ? "вы сыграли " + played : "так не сходить"}</span>` +
+      `<span class="mv">надо ${c.san}</span><span class="when">${when}</span>`;
+  const note = $id("note");
+  note.className = "note";
+  note.innerHTML = `<div class="srsverdict">${head}</div>` +
+    (ok && grade === 5 ? "" : `<div class="txt">${c.note || "Комментария к этому ходу в книге нет."}</div>`) +
+    `<div class="srsfrom">${c.short} · ${c.title}</div>`;
+  note.classList.remove("flash"); void note.offsetWidth; note.classList.add("flash");
+  if(navigator.vibrate) navigator.vibrate(ok ? 18 : [25,60,25]);
+
+  /* дальше: верный ответ пролистывается сам, на ошибке ждём читателя */
+  const box = $id("subs");
+  box.innerHTML = "";
+  const nxt = document.createElement("button");
+  nxt.className = "go";
+  nxt.textContent = srs.i + 1 >= srs.queue.length ? "Завершить" : "Дальше";
+  nxt.onclick = ()=>{ srs.i++; srsNext(); };
+  box.appendChild(nxt);
+  const open = document.createElement("button");
+  open.textContent = "открыть вариант в книге";
+  open.onclick = ()=>{ const cc = srs.card; srsQuit(); srsGoTo(cc); };
+  box.appendChild(open);
+  if(ok) srs.tmr = setTimeout(()=>{ if(srs && srs.answered){ srs.i++; srsNext(); } }, 1100);
+}
+
+/* показать ответ, не угадывая */
+function srsShow(){
+  if(!srs || srs.answered) return;
+  srs.shown = true; srsAnswer(srs.card.san);
+}
+function srsFinish(){
+  srs.fin = true;
+  const n = srs.done, ok = srs.right;
+  $id("srscount").innerHTML = `повторение · готово`;
+  $id("srsfill").style.width = "100%";
+  $id("srsmeta").textContent = `верно ${ok} из ${n}`;
+  $id("hint").textContent = "сессия закончена";
+  const {due, fresh} = srsPlan();
+  const left = srsNewLeft();
+  const more = Math.min(SRS.opts.sessionMax, due.length + Math.min(fresh.length, left));
+  const note = $id("note");
+  note.className = "note";
+  note.innerHTML = `<div class="head"><b>сессия закончена</b>` +
+    `<span class="cnt">${ok} из ${n}</span></div>` +
+    `<div class="txt">` +
+    (more ? `На сегодня осталось ещё ${plural(more, "карточка", "карточки", "карточек")} — можно начать новую сессию.`
+          : `На сегодня всё. Завтра вернутся карточки, у которых подошёл срок.`) +
+    `</div>`;
+  const box = $id("subs"); box.innerHTML = "";
+  if(more){
+    const again = document.createElement("button");
+    again.className = "go"; again.textContent = "Ещё сессия";
+    again.onclick = ()=>{ const q = buildSession(); if(!q.length) return;
+      srs.queue = q; srs.i = 0; srs.total = q.length; srs.done = 0; srs.right = 0; srs.wrong = 0;
+      srs.fin = false; srsNext(); };
+    box.appendChild(again);
+  }
+  const out = document.createElement("button");
+  out.textContent = "выйти"; out.onclick = srsQuit;
+  box.appendChild(out);
+}
+/* уйти из повторения к нужному месту книги */
+function srsGoTo(c){
+  if(bi !== c.b) setBook(c.b);
+  const k = VARS.findIndex(v => v.id === c.vid);
+  if(k >= 0){ vi = k; pi = Math.min(c.ply, VARS[vi].plies.length - 1); render(); }
+}
+
+/* ---- перенос состояния ---- */
+function srsExportText(){ return JSON.stringify({v:1, day:SRS.day, newDone:SRS.newDone,
+                                                 opts:SRS.opts, cards:SRS.cards}); }
+function srsMsg(t){ $id("srsmsg").textContent = t; }
+function srsImport(text){
+  let d = null;
+  try{ d = JSON.parse(text); }catch(e){ srsMsg("не разобрать: это не сохранённая строка"); return; }
+  if(!d || typeof d !== "object" || !d.cards){ srsMsg("в строке нет карточек"); return; }
+  let add = 0, upd = 0;
+  for(const id in d.cards){
+    const inc = d.cards[id], cur = SRS.cards[id];
+    if(!cur){ SRS.cards[id] = inc; add++; continue; }
+    /* при совпадении берём запись с более длинной историей, при равной — с поздним сроком */
+    const a = (inc.n||0) + (inc.l||0), b = (cur.n||0) + (cur.l||0);
+    if(a > b || (a === b && (inc.d||0) > (cur.d||0))){ SRS.cards[id] = inc; upd++; }
+  }
+  if(d.opts) SRS.opts = Object.assign(SRS.opts, d.opts);
+  srsSave();
+  srsOpen();                                  /* окно перерисуется — сообщение ставим после */
+  srsMsg(`загружено: ${add} новых, ${upd} обновлено, всего ${Object.keys(SRS.cards).length}`);
+}
+
+$id("srsbtn").onclick   = ()=>{ if(srs){ srsQuit(); return; } srsOpen(); };
+$id("srsclose").onclick = srsClose;
+$id("srsmodal").onclick = e=>{ if(e.target === $id("srsmodal")) srsClose(); };
+$id("srsstart").onclick = ()=>{ srsClose(); srsBegin(); };
+$id("srsquit").onclick  = srsQuit;
+$id("srsnew").onchange  = e=>{ SRS.opts.newPerDay = Math.max(0, Math.min(60, +e.target.value||0)); srsSave(); srsOpen(); };
+$id("srssize").onchange = e=>{ SRS.opts.sessionMax = Math.max(5, Math.min(80, +e.target.value||20)); srsSave(); srsOpen(); };
+$id("srsexport").onclick = ()=>{
+  const t = srsExportText();
+  $id("srsio").value = t;
+  if(navigator.clipboard) navigator.clipboard.writeText(t).then(
+    ()=>srsMsg("строка скопирована в буфер"), ()=>srsMsg("строка ниже — скопируйте вручную"));
+  else srsMsg("строка ниже — скопируйте вручную");
+};
+$id("srsdl").onclick = ()=>{
+  const blob = new Blob([srsExportText()], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "chessbooks-progress-" + dayStr() + ".json";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
+  srsMsg("файл сохранён");
+};
+$id("srsfilebtn").onclick = ()=> $id("srsfile").click();
+$id("srsfile").onchange = e=>{
+  const f = e.target.files && e.target.files[0];
+  if(!f) return;
+  const r = new FileReader();
+  r.onload = ()=> srsImport(String(r.result));
+  r.readAsText(f);
+  e.target.value = "";
+};
+$id("srsimport").onclick = ()=>{
+  const t = $id("srsio").value.trim();
+  if(!t){ srsMsg("вставьте строку или выберите файл"); return; }
+  srsImport(t);
+};
+$id("srsreset").onclick = ()=>{
+  if(!confirm("Стереть весь прогресс повторений? Отменить будет нельзя.")) return;
+  SRS.cards = {}; SRS.newDone = 0; srsSave(); srsMsg("прогресс стёрт"); srsOpen();
+};
 
 if(window.innerWidth>=860) $id("sheet").open = true;
 paintBook(); buildOpts(); render();

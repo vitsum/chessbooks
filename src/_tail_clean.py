@@ -4,6 +4,8 @@
 # вехи и побочные линии молча пропадали).
 EVALS = globals().get("EVALS", {})
 SUBS  = globals().get("SUBS", {})
+# необязательный вес варианта для интервальных повторений (см. PRIO в _body_mygrob.py)
+PRIO  = globals().get("PRIO", {})
 
 for v in V:
     labels = v["labels"]
@@ -116,6 +118,9 @@ if _cpsub and os.path.exists(_cpsub):
             d["cp"] = [_get(d["startFen"])] + [_get(p["fen"]) for p in d["plies"]]
 
 # варианты одной главы должны идти подряд, в каком бы порядке их ни добавили
+for v in V:
+    if PRIO.get(v["id"]): v["prio"] = PRIO[v["id"]]
+
 _order = {}
 for v in V:
     _order.setdefault(v["chapter"], len(_order))
