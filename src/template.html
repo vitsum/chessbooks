@@ -384,8 +384,6 @@ h1{font-family:var(--disp);font-weight:600;font-size:clamp(22px,6vw,40px);line-h
 .row button.empty:hover{background:none}
 
 footer{margin-top:22px;padding-top:12px;border-top:1px solid var(--rule);font-size:12px;color:var(--mut)}
-kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px solid var(--rule);
-  border-radius:2px;padding:1px 5px}
 
 @media(max-width:600px){
   body{padding:12px 10px 24px}
@@ -486,9 +484,8 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
 </div>
 
 <footer>
-  <kbd>←</kbd> <kbd>→</kbd> — ходы, <kbd>↑</kbd> <kbd>↓</kbd> — варианты, <kbd>C</kbd> — к следующему комментарию, <kbd>Home</kbd> / <kbd>End</kbd> — в начало и в конец. Градусник — Stockfish 16, глубина 16, посчитано заранее; символ в строке ниже доски — оценка из книги.
-  <span id="bookkeys"><kbd>1</kbd>…<kbd>9</kbd> — переключить книгу, </span><kbd>T</kbd> — тренажёр
-  (в нём <kbd>←</kbd> забирает ход). Доска: chessboard.js + chess.js, фигуры Cburnett.
+  Градусник — Stockfish 16, глубина 16, посчитано заранее; символ в строке ниже доски — оценка из книги.
+  Доска: chessboard.js + chess.js, фигуры Cburnett.
   <span id="credit"></span>
 </footer>
 
@@ -745,7 +742,7 @@ function buildOpts(){
     b.onclick=()=>setBook(i);
     box.appendChild(b);
   });
-  if(BOOKS.length < 2){ box.style.display="none"; $id("bookkeys").style.display="none"; }
+  if(BOOKS.length < 2) box.style.display = "none";
 })();
 
 function setBook(i){
@@ -1553,33 +1550,7 @@ bw.addEventListener("touchend",e=>{
   if(Math.abs(dx)>40 && Math.abs(dx)>Math.abs(dy)) go(dx<0?1:-1);
 },{passive:true});
 
-document.addEventListener("keydown",e=>{
-  if($id("modal").classList.contains("on")){ if(e.key==="Escape") closeModal(); return; }
-  if($id("trmodal").classList.contains("on")){ if(e.key==="Escape") closeTr(); return; }
-  if(tr){
-    if(e.key==="Escape"){ closeTrainer(); render(); e.preventDefault(); }
-    else if(e.key==="ArrowLeft"){ trBack(); e.preventDefault(); }
-    else if(e.key==="Home"){ trBack(true); e.preventDefault(); }
-    else if(e.key==="Enter" && tr.done){ trBegin(); e.preventDefault(); }
-    else if(e.key==="b"||e.key==="B"||e.key==="и"||e.key==="И"){ trToBook(); e.preventDefault(); }
-    else if(e.key>="1" && e.key<="9"){ const i=+e.key-1; if(i<BOOKS.length && i!==bi){ setBook(i); e.preventDefault(); } }
-    return;
-  }
-  if(expl && e.key==="Escape"){ toggleExpl(); e.preventDefault(); return; }
-  if(expl && e.key!=="ArrowLeft"){ return; }
-  if(e.key==="ArrowRight"){go(1);e.preventDefault();}
-  else if(e.key==="ArrowLeft"){go(-1);e.preventDefault();}
-  else if(e.key==="ArrowDown"){goVar(1);e.preventDefault();}
-  else if(e.key==="ArrowUp"){goVar(-1);e.preventDefault();}
-  else if(e.key==="Home"){pi=0;render();e.preventDefault();}
-  else if(e.key==="End"){pi=VARS[vi].plies.length-1;render();e.preventDefault();}
-  else if(e.key==="c"||e.key==="C"||e.key==="с"||e.key==="С"){nextNote(e.shiftKey?-1:1);e.preventDefault();}
-  else if(e.key==="t"||e.key==="T"||e.key==="е"||e.key==="Е"){openTr();e.preventDefault();}
-  else if(e.key>="1" && e.key<="9"){
-    const i=+e.key-1;
-    if(i<BOOKS.length && i!==bi){ setBook(i); e.preventDefault(); }
-  }
-});
+/* Горячих клавиш нет намеренно: всё управление кнопками на экране. */
 
 
 /* ================= интервальные повторения по вариантам =================
