@@ -89,8 +89,12 @@ def _own_blunder(title, own=None):
     return False
 
 _off = []
+# книга может назвать варианты, которые лежат в ней справочно, но в ежедневные
+# повторения не идут: OFF = {"id", ...}. Список объявляет книга, как EVALS и SUBS.
+_manual = globals().get("OFF", ())
 for v in V:
     why = ("партия целиком" if "Партии целиком" in v["chapter"]
+           else "вне ядра" if v["id"] in _manual
            else "ошибка за свою сторону" if _own_blunder(v["title"]) else None)
     v["off"] = bool(why)
     if why: _off.append((v["id"], why, v["title"]))
