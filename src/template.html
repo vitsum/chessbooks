@@ -502,6 +502,24 @@ const BOOKS  = __BOOKS__;      /* [{id, short, h1, eyebrow, sub, credit, vars:[.
 const ChessCls = (typeof Chess !== "undefined") ? Chess : module.exports.Chess;
 const $id = id => document.getElementById(id);
 
+/* ---- порядок вкладок: чем позже книгу открывали, тем левее она стоит ----
+   Порядок применяется при загрузке, а не в момент клика: иначе вкладки прыгали бы
+   под курсором. Книги, которые ещё не открывали, сохраняют исходный порядок из books.py
+   (Array.sort стабильна) и уходят в конец. Ключ хранения свой, отдельно от статистики
+   тренажёра: тот словарь читается сильно ниже, а сортировать надо до первого чтения
+   BOOKS[0]. */
+const LS_ORDER = "chessbooks.books.v1";
+const bookSeen = () => { try{ const a = JSON.parse(localStorage.getItem(LS_ORDER)); return Array.isArray(a) ? a : []; }catch(e){ return []; } };
+(function orderBooks(){
+  const seen = bookSeen();
+  if(!seen.length) return;
+  const rank = id => { const i = seen.indexOf(id); return i < 0 ? seen.length : i; };
+  BOOKS.sort((a,b) => rank(a.id) - rank(b.id));
+})();
+function rememberBook(id){
+  try{ localStorage.setItem(LS_ORDER, JSON.stringify([id].concat(bookSeen().filter(x=>x!==id)).slice(0,20))); }catch(e){}
+}
+
 /* ---- разбор ходов движком ---- */
 BOOKS.forEach(bk => bk.vars.forEach(v=>{
   const g = new ChessCls();
@@ -728,6 +746,7 @@ function setBook(i){
   if(expl) closeExpl();
   if(tr) closeTrainer();
   bi = i; VARS = BOOKS[bi].vars; vi = 0; pi = 0; sub = null;
+  rememberBook(BOOKS[bi].id);
   paintBook(); buildOpts(); render();
 }
 function paintBook(){
